@@ -1,0 +1,28 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "3e416bacdd36ded2b7c6a8faae1dc77c"
+name = "inventory-sync"
+handle = "inventory-sync-70"
+application_url = "https://homepage-mapping-gate-legacy.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "siar-testing-store.myshopify.com"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = ""
+
+[auth]
+redirect_urls = [
+  "https://homepage-mapping-gate-legacy.trycloudflare.com/auth/callback",
+  "https://homepage-mapping-gate-legacy.trycloudflare.com/auth/shopify/callback",
+  "https://homepage-mapping-gate-legacy.trycloudflare.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+[pos]
+embedded = false

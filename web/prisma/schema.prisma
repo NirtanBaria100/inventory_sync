@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  // New fields
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+}
+
+
+model Store {
+  id          Int         @id @default(autoincrement())
+  storeName   String
+  key         String
+  type        String 
+  sourceConnections Connection[] @relation("SourceStoreRelation")
+  destinationConncetions Connection[] @relation("DestinationStoreRelation")
+}
+
+model Connection {
+  id                 Int   @id @default(autoincrement())
+  sourceStoreId      Int
+  destinationStoreId Int
+  sourceStore        Store  @relation("SourceStoreRelation", fields: [sourceStoreId], references: [id])
+  destinationStore   Store  @relation("DestinationStoreRelation", fields: [destinationStoreId], references: [id])
+}
