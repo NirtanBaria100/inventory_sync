@@ -3,6 +3,7 @@ import { Text, Divider, LegacyCard } from "@shopify/polaris";
 import InfoBox from './InfoBox';
 import BodyBoxes from './BodyBoxes'
 import { useSelector } from "react-redux";
+import Table from "../order/Table";
 
 
 function HomeDashboard() {
@@ -29,28 +30,42 @@ function HomeDashboard() {
 
 
       {/* Body Section */}
-        <div style={{ marginTop: "10px" ,  display:"flex", flexDirection:"column" }}>
+      <div style={{ marginTop: "10px", display: "flex", flexDirection: "column" }}>
 
-          <div style={{display:"flex" , width:"100%",  justifyContent: 'space-evenly' ,height: "120px" ,  padding: "20px"}}>
+        <div style={{ display: "flex", width: "100%", justifyContent: 'space-evenly', height: "120px", padding: "20px" }}>
 
 
-{/* only showing the store key if it is an destination store  */}
+          {/* only showing the store key if it is an destination store  */}
           {storeData.type === 'destination' && (
-  <InfoBox label="Store key" value={storeData.key} showCopyButton={true} />
-)}          <InfoBox label="Store type" value={storeData.type} showCopyButton={false} />
+            <InfoBox label="Store key" value={storeData.key} showCopyButton={true} />
+          )}          <InfoBox label="Store type" value={storeData.type} showCopyButton={false} />
+
+        </div>
+
+        {/* <>
+
+          <Text variant="headingMd">Order tracking</Text>
+          <div
+            style={{
+              marginBlock: '20px'
+            }}
+          >
+            <Divider borderColor="border-inverse" />
 
           </div>
+          <Table />
+        </> */}
 
 
-{/* not showing these anymore as, but uncomment and check do get an idea of the dashoard fields we need */}
-          {/* <div style={{ display: "flex", width: "100%", justifyContent: 'space-evenly', height: "300px", padding: "20px" }} >
+        {/* not showing these anymore as, but uncomment and check do get an idea of the dashoard fields we need */}
+        {/* <div style={{ display: "flex", width: "100%", justifyContent: 'space-evenly', height: "300px", padding: "20px" }} >
             <BodyBoxes label="Connected stores" value="5" />
             <BodyBoxes label="Synced products" value="500" />
             <BodyBoxes label="Orders" value="2" />
             <BodyBoxes label="Synced products sold" value="2" />
           </div> */}
 
-        </div>
+      </div>
     </div>
   );
 }

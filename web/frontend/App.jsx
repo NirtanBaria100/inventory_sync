@@ -72,8 +72,9 @@ export default function App() {
           <NavMenu>
             <Link to="/" rel="home" />
               <>
-                <Link to="/settings">settings</Link>
-                <Link to="/stores">stores</Link>
+                {/* <Link to="/settings">Settings</Link> */}
+                <Link to="/stores">Connected Stores</Link>
+                <Link to="/products">Product Sync</Link>
               </>
           </NavMenu>
           <Routes pages={pages} />

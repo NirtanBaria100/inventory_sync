@@ -1,17 +1,18 @@
-import { configureStore } from '@reduxjs/toolkit';
-import dataReducer from '../features/dataSlice'
+import { configureStore } from "@reduxjs/toolkit";
+import dataReducer from "../features/dataSlice";
+import productReducer from "../features/productSlice";
 
 export const store = configureStore({
   reducer: {
     data: dataReducer,
+    products: productReducer
   },
 });
 
-
 // import { configureStore } from '@reduxjs/toolkit';
 // import { persistStore, persistReducer } from 'redux-persist';
-// // import storage from 'redux-persist/lib/storage'; 
-// import storage from 'redux-persist/lib/storage/session'; 
+// // import storage from 'redux-persist/lib/storage';
+// import storage from 'redux-persist/lib/storage/session';
 // import { combineReducers } from 'redux'; // Import combineReducers
 // import dataReducer from '../features/dataSlice';
 
