@@ -31,7 +31,7 @@ export function ModalFilter() {
 
           <InlineGrid columns={2} gap={'200'}>
             <FiltersOptions data={vendors} label={"Vendors"} setValue={setfilterCriteria} value={filterCriteria} />
-            <FiltersOptions data={syncStatus} label={"Status"} setValue={setfilterCriteria} value={filterCriteria} />
+            {/* <FiltersOptions data={syncStatus} label={"Status"} setValue={setfilterCriteria} value={filterCriteria} /> */}
           </InlineGrid>
         </div>
         <TitleBar title="Filter">

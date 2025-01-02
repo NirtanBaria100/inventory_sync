@@ -1,9 +1,9 @@
 import express from "express";
+import productController from "../controllers/productController.js";
+
+
 const router = express.Router();
 
-router.get("/batch/:page", (req, res) => {
-  return res.status(200).json("working");
-});
+router.get("/batch/:page", productController.getProductBatch);
 
-
-export default router
+export default router;

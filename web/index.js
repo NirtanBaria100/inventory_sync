@@ -39,16 +39,18 @@ app.post(
 // If you are adding routes outside of the /api path, remember to
 // also add a proxy rule for them in web/frontend/vite.config.js
 
-app.use("/api/products", productsRoutes);
+app.use(
+  "/api/products",
+  shopify.validateAuthenticatedSession(),
+  productsRoutes
+);
 app.use("/api/*", shopify.validateAuthenticatedSession());
-
 
 app.use(express.json());
 
 //maadhwan
 app.use("/api/shop", storeRoutes);
 app.use("/api/connection", connectionRoutes);
-
 
 app.get("/api/products/count", async (_req, res) => {
   const client = new shopify.api.clients.Graphql({

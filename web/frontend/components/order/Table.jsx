@@ -7,8 +7,10 @@ import {
     useBreakpoints,
 } from '@shopify/polaris';
 import React from 'react';
+import { useSelector } from 'react-redux';
 
 export default function Table({ TableData, Headings }) {
+    const { loading } = useSelector(state => state.products);
     const Data = TableData;
     const resourceName = {
         singular: 'Data',
@@ -20,7 +22,7 @@ export default function Table({ TableData, Headings }) {
 
     const rowMarkup = Data.map(
         (
-            { id, order, date, customer, total, paymentStatus, fulfillmentStatus },
+            { id, title, vendor },
             index,
         ) => (
             <IndexTable.Row
@@ -32,14 +34,12 @@ export default function Table({ TableData, Headings }) {
             >
                 <IndexTable.Cell>
                     <Text variant="bodyMd" fontWeight="bold" as="span">
-                        {order}
+                        {index+1}
                     </Text>
                 </IndexTable.Cell>
-                <IndexTable.Cell>{date}</IndexTable.Cell>
-                <IndexTable.Cell>{customer}</IndexTable.Cell>
-                <IndexTable.Cell>{paymentStatus}</IndexTable.Cell>
-                <IndexTable.Cell>{fulfillmentStatus}</IndexTable.Cell>
-                <IndexTable.Cell>siar-development</IndexTable.Cell>
+                <IndexTable.Cell>{title}</IndexTable.Cell>
+                <IndexTable.Cell>{vendor}</IndexTable.Cell>
+                <IndexTable.Cell><Badge tone='success'>synced</Badge></IndexTable.Cell>
             </IndexTable.Row>
         ),
     );
@@ -47,7 +47,8 @@ export default function Table({ TableData, Headings }) {
     return (
         <LegacyCard>
             <IndexTable
-                loading={false}
+                
+                loading={loading}
                 condensed={useBreakpoints().smDown}
                 resourceName={resourceName}
                 itemCount={Data.length}

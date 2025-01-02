@@ -3,22 +3,23 @@
 client_id = "3e416bacdd36ded2b7c6a8faae1dc77c"
 name = "inventory-sync"
 handle = "inventory-sync-70"
-application_url = "https://see-spectacular-surprised-establish.trycloudflare.com"
+application_url = "https://dumb-forward-kernel-aus.trycloudflare.com"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
 dev_store_url = "siar-development.myshopify.com"
+include_config_on_deploy = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = ""
+scopes = "read_products,write_products"
 
 [auth]
 redirect_urls = [
-  "https://see-spectacular-surprised-establish.trycloudflare.com/auth/callback",
-  "https://see-spectacular-surprised-establish.trycloudflare.com/auth/shopify/callback",
-  "https://see-spectacular-surprised-establish.trycloudflare.com/api/auth/callback"
+  "https://dumb-forward-kernel-aus.trycloudflare.com/auth/callback",
+  "https://dumb-forward-kernel-aus.trycloudflare.com/auth/shopify/callback",
+  "https://dumb-forward-kernel-aus.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

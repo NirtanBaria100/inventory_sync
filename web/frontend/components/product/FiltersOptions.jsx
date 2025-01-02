@@ -1,11 +1,17 @@
 import { Select } from '@shopify/polaris';
 import { useState, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { setQuery } from '../../features/productSlice';
 
-export default function FiltersOptions({data, label, setValue, value}) {
+export default function FiltersOptions({ data, label }) {
+    const dispatch = useDispatch();
     const [selected, setSelected] = useState('today');
+    const products = useSelector((state) => state.products);
+    const { Query } = products;
+
 
     const handleSelectChange = useCallback(
-        (value) => setValue({ ...value, status: value }),
+        (value) => dispatch(setQuery({ ...Query, FilterCriteria: value })),
         [],
     );
 
@@ -16,7 +22,7 @@ export default function FiltersOptions({data, label, setValue, value}) {
             label={label}
             options={options}
             onChange={handleSelectChange}
-            value={selected}
+            value={Query.FilterCriteria}
         />
     );
 }

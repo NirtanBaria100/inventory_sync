@@ -1,54 +1,43 @@
-import { Badge, BlockStack, Button, Card, Divider, InlineGrid, Layout, OptionList, Page, Text, TextField } from '@shopify/polaris'
-import React, { useEffect } from 'react'
+import { Badge, BlockStack, Button, Card, Divider, InlineGrid, InlineStack, Layout, OptionList, Page, Text, TextField } from '@shopify/polaris'
+import React, { useEffect, useState } from 'react'
 import Table from '../components/order/Table'
-// import "../assets/css/productPage.css";
-import { PlusIcon } from '@shopify/polaris-icons';
+import "../assets/css/productPage.css";
+import { SearchIcon, PlusIcon } from '@shopify/polaris-icons';
 import { ModalFilter } from '../components/product/ModalFilter';
 import { productTableHeadings } from '../utils/productTableHeadings';
 // import { } from '../utils/productPage/product'
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { getbatchProducts } from '../components/product/helper/functions';
+import { setProducts, setLoading, setQuery } from '../features/productSlice';
+import FiltersOptions from '../components/product/filtersOptions';
 
 function products() {
 
-  let {products,data} = useSelector((state) => state);
-  
+  const products = useSelector((state) => state.products);
+  const { Query } = products;
+  const vendors = [{ value: "", label: "Select Vendor" },{ value: "abc", label: "ABC" }];
+  // const [Query, setQuery] = useState({ searchQuery: '', FilterCriteria: '' });
+
+
+  const dispatch = useDispatch();
+
 
   useEffect(() => {
+    (async () => {
+      dispatch(setLoading(true));
+      let response = await getbatchProducts();
+      dispatch(setProducts(response.data));
+      dispatch(setLoading(false));
 
-    
-    console.log({products,data})
 
-  },[]);
+    })()
+  }, []);
 
-  // let ProductsData = [
-  //   {
-  //     id: '1020',
-  //     order: '#1020',
-  //     date: 'Jul 20 at 4:34pm',
-  //     customer: 'Jaydon Stanton',
-  //     total: '$969.44',
-  //     paymentStatus: <Badge progress="complete">Paid</Badge>,
-  //     fulfillmentStatus: <Badge progress="incomplete">Unfulfilled</Badge>,
-  //   },
-  //   {
-  //     id: '1019',
-  //     order: '#1019',
-  //     date: 'Jul 20 at 3:46pm',
-  //     customer: 'Ruben Westerfelt',
-  //     total: '$701.19',
-  //     paymentStatus: <Badge progress="partiallyComplete">Partially paid</Badge>,
-  //     fulfillmentStatus: <Badge progress="incomplete">Unfulfilled</Badge>,
-  //   },
-  //   {
-  //     id: '1018',
-  //     order: '#1018',
-  //     date: 'Jul 20 at 3.44pm',
-  //     customer: 'Leo Carder',
-  //     total: '$798.24',
-  //     paymentStatus: <Badge progress="complete">Paid</Badge>,
-  //     fulfillmentStatus: <Badge progress="incomplete">Unfulfilled</Badge>,
-  //   },
-  // ];
+
+  const HandleSearchQuery = (Query) => {
+
+  };
+
 
   let productHeadings = productTableHeadings;
 
@@ -65,6 +54,7 @@ function products() {
           <Text variant="headingXl" as="h4">
             Product Syncronization
           </Text>
+          <Text variant='bodySm'>Syncronization will import products to your selected marketplace.</Text>
         </div>
 
 
@@ -76,12 +66,14 @@ function products() {
           <div style={{ marginBottom: "10px" }}>
             <Layout columns={2}>
               <Layout.Section variant='oneHalf'>
-                <TextField placeholder={"Search Products"} />
+                <TextField placeholder={"Search Products"} value={Query.searchQuery} onChange={(value) => dispatch(setQuery({ ...Query, searchQuery: value }))} />
               </Layout.Section>
               <Layout.Section variant='oneThird'>
-                <BlockStack align='end' >
-                  <Button onClick={() => shopify.modal.show('Filter-products')} icon={PlusIcon}>Filter</Button>
-                </BlockStack>
+                <InlineGrid columns={2} gap={"100"}>
+                  {/* <Button onClick={() => shopify.modal.show('Filter-products')} icon={PlusIcon}>Filter</Button> */}
+                  <FiltersOptions data={vendors} label={""} />
+                  <Button variant='primary' onClick={() => shopify.modal.show('Filter-products')} icon={SearchIcon}>Search</Button>
+                </InlineGrid>
               </Layout.Section>
             </Layout>
           </div>
