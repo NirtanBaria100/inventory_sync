@@ -1,22 +1,20 @@
 import { Badge, BlockStack, Button, Card, Divider, InlineGrid, InlineStack, Layout, OptionList, Page, Text, TextField } from '@shopify/polaris'
 import React, { useEffect, useState } from 'react'
-import Table from '../components/order/Table'
 import "../assets/css/productPage.css";
 import { SearchIcon, PlusIcon } from '@shopify/polaris-icons';
-import { ModalFilter } from '../components/product/ModalFilter';
+// import { ModalFilter } from '../components/product/ModalFilter';
 import { productTableHeadings } from '../utils/productTableHeadings';
 // import { } from '../utils/productPage/product'
 import { useDispatch, useSelector } from 'react-redux';
 import { getbatchProducts } from '../components/product/helper/functions';
-import { setProducts, setLoading, setQuery } from '../features/productSlice';
+import { setProducts, setLoading, setQuery, setVendors, setHasNextPage, setHasPreviousPage, setStartCursor, setEndCursor } from '../features/productSlice';
 import FiltersOptions from '../components/product/filtersOptions';
+import Table from '../components/product/Table';
 
 function products() {
 
   const products = useSelector((state) => state.products);
-  const { Query } = products;
-  const vendors = [{ value: "", label: "Select Vendor" },{ value: "abc", label: "ABC" }];
-  // const [Query, setQuery] = useState({ searchQuery: '', FilterCriteria: '' });
+  const { Query, loading, vendors } = products;
 
 
   const dispatch = useDispatch();
@@ -24,8 +22,26 @@ function products() {
 
   useEffect(() => {
     (async () => {
+
+      let res = await fetch("/api/products/vendors");
+      let vendors = await res.json();
+
+      console.log(vendors)
+      dispatch(setVendors(vendors.vendors));
+      // console.log({ vendors });
+
+
       dispatch(setLoading(true));
-      let response = await getbatchProducts();
+      let page = 1;
+      let response = await getbatchProducts(page, Query);
+      let pageInfo = response.Pageinfo;
+      console.log({pageInfo})
+      dispatch(setHasNextPage(pageInfo.hasNextPage));
+      dispatch(setHasPreviousPage(pageInfo.hasPreviousPage));
+      dispatch(setStartCursor(pageInfo.startCursor));
+      dispatch(setEndCursor(pageInfo.endCursor));
+
+      //it will set the products into the table
       dispatch(setProducts(response.data));
       dispatch(setLoading(false));
 
@@ -34,7 +50,21 @@ function products() {
   }, []);
 
 
-  const HandleSearchQuery = (Query) => {
+  const HandleSearchQuery = () => {
+    (async () => {
+
+      // if (Query.searchQuery == "" && Query.FilterCriteria == "")
+      //   return shopify.toast.show("Please select criteria!", { isError: true });
+
+
+      dispatch(setLoading(true));
+      let page = 0;
+      let response = await getbatchProducts(page, Query);
+      dispatch(setProducts(response.data));
+      dispatch(setLoading(false));
+
+
+    })()
 
   };
 
@@ -70,9 +100,8 @@ function products() {
               </Layout.Section>
               <Layout.Section variant='oneThird'>
                 <InlineGrid columns={2} gap={"100"}>
-                  {/* <Button onClick={() => shopify.modal.show('Filter-products')} icon={PlusIcon}>Filter</Button> */}
-                  <FiltersOptions data={vendors} label={""} />
-                  <Button variant='primary' onClick={() => shopify.modal.show('Filter-products')} icon={SearchIcon}>Search</Button>
+                  <FiltersOptions data={vendors}  />
+                  <Button variant='primary'  loading={loading} onClick={() => HandleSearchQuery()} icon={SearchIcon}>Search</Button>
                 </InlineGrid>
               </Layout.Section>
             </Layout>
@@ -80,7 +109,7 @@ function products() {
           <Table TableData={products.value} Headings={productHeadings} />
         </Card>
       </div >
-      <ModalFilter />
+      {/* <ModalFilter /> */}
     </Page >
   )
 }

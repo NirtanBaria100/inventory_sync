@@ -12,8 +12,10 @@
     "deploy": "shopify app deploy"
   },
   "dependencies": {
+    "body-parser": "^1.20.3",
     "dotenv": "^16.4.5",
-    "redux-persist": "^6.0.0"
+    "redux-persist": "^6.0.0",
+    "winston": "^3.17.0"
   },
   "author": "Maadhwan Chandwani",
   "private": true,

@@ -3,7 +3,6 @@ import { Text, Divider, LegacyCard } from "@shopify/polaris";
 import InfoBox from './InfoBox';
 import BodyBoxes from './BodyBoxes'
 import { useSelector } from "react-redux";
-import Table from "../order/Table";
 
 
 function HomeDashboard() {

@@ -3,7 +3,7 @@
 client_id = "3e416bacdd36ded2b7c6a8faae1dc77c"
 name = "inventory-sync"
 handle = "inventory-sync-70"
-application_url = "https://dumb-forward-kernel-aus.trycloudflare.com"
+application_url = "https://ira-with-merry-pt.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "read_products,write_products"
 
 [auth]
 redirect_urls = [
-  "https://dumb-forward-kernel-aus.trycloudflare.com/auth/callback",
-  "https://dumb-forward-kernel-aus.trycloudflare.com/auth/shopify/callback",
-  "https://dumb-forward-kernel-aus.trycloudflare.com/api/auth/callback"
+  "https://ira-with-merry-pt.trycloudflare.com/auth/callback",
+  "https://ira-with-merry-pt.trycloudflare.com/auth/shopify/callback",
+  "https://ira-with-merry-pt.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

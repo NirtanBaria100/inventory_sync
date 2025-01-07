@@ -7,10 +7,13 @@ import {
     useBreakpoints,
 } from '@shopify/polaris';
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { handleImportProducts, handleOnNextEvent, handleOnPrevEvent } from './helper/functions';
+import { PlusCircleIcon } from '@shopify/polaris-icons';
 
 export default function Table({ TableData, Headings }) {
-    const { loading } = useSelector(state => state.products);
+    const { Query, loading, hasNextPage, hasPreviousPage, startCursor, endCursor, value } = useSelector(state => state.products);
+    const dispatch = useDispatch();
     const Data = TableData;
     const resourceName = {
         singular: 'Data',
@@ -19,6 +22,8 @@ export default function Table({ TableData, Headings }) {
 
     const { selectedResources, allResourcesSelected, handleSelectionChange } =
         useIndexResourceState(Data);
+
+
 
     const rowMarkup = Data.map(
         (
@@ -34,7 +39,7 @@ export default function Table({ TableData, Headings }) {
             >
                 <IndexTable.Cell>
                     <Text variant="bodyMd" fontWeight="bold" as="span">
-                        {index+1}
+                        {index + 1}
                     </Text>
                 </IndexTable.Cell>
                 <IndexTable.Cell>{title}</IndexTable.Cell>
@@ -47,7 +52,7 @@ export default function Table({ TableData, Headings }) {
     return (
         <LegacyCard>
             <IndexTable
-                
+
                 loading={loading}
                 condensed={useBreakpoints().smDown}
                 resourceName={resourceName}
@@ -55,15 +60,23 @@ export default function Table({ TableData, Headings }) {
                 selectedItemsCount={
                     allResourcesSelected ? 'All' : selectedResources.length
                 }
+                promotedBulkActions={[{
+                    content: 'Import',
+                    icon: PlusCircleIcon,
+                    onAction: () => handleImportProducts(selectedResources, value),
+                }]}
+
                 onSelectionChange={handleSelectionChange}
                 headings={Headings}
                 pagination={{
-                    hasNext: true,
-                    onNext: () => { },
+                    hasNext: hasNextPage,
+                    hasPrevious: hasPreviousPage,
+                    onNext: () => handleOnNextEvent(dispatch, startCursor, endCursor, Query),
+                    onPrevious: () => handleOnPrevEvent(dispatch, startCursor, endCursor, Query)
                 }}
             >
                 {rowMarkup}
             </IndexTable>
-        </LegacyCard>
+        </LegacyCard >
     );
 }

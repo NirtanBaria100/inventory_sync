@@ -12,10 +12,14 @@ import storeRoutes from "./routes/storeRoutes.js";
 import connectionRoutes from "./routes/connectionRoutes.js";
 import productsRoutes from "./routes/productsRoutes.js";
 
+import bodyParser from 'body-parser';
+
 const PORT = parseInt(
   process.env.BACKEND_PORT || process.env.PORT || "3000",
   10
 );
+
+
 
 const STATIC_PATH =
   process.env.NODE_ENV === "production"
@@ -23,6 +27,9 @@ const STATIC_PATH =
     : `${process.cwd()}/frontend/`;
 
 const app = express();
+// Middleware to parse JSON bodies
+app.use(bodyParser.json());
+
 
 // Set up Shopify authentication and webhook handling
 app.get(shopify.config.auth.path, shopify.auth.begin());

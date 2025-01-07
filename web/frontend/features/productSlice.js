@@ -7,6 +7,11 @@ const initialState = {
     searchQuery: "",
     FilterCriteria: "",
   },
+  vendors: [],
+  startCursor:"",
+  endCursor:"",
+  hasNextPage:false,
+  hasPreviousPage:false
 };
 
 const productSlice = createSlice({
@@ -26,10 +31,25 @@ const productSlice = createSlice({
     setQuery: (state, action) => {
       return { ...state, Query: action.payload };
     },
+    setVendors: (state, action) => {
+      return { ...state, vendors: action.payload };
+    },
+    setEndCursor: (state, action) => {
+      return { ...state, endCursor: action.payload };
+    },
+    setStartCursor: (state, action) => {
+      return { ...state, startCursor: action.payload };
+    },
+    setHasNextPage: (state, action) => {
+      return { ...state, hasNextPage: action.payload };
+    },
+    setHasPreviousPage: (state, action) => {
+      return { ...state, hasPreviousPage: action.payload };
+    }
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { setProducts, setLoading,setQuery } = productSlice.actions;
+export const { setProducts, setLoading, setQuery,setVendors,setHasNextPage,setHasPreviousPage,setEndCursor,setStartCursor} = productSlice.actions;
 
 export default productSlice.reducer;

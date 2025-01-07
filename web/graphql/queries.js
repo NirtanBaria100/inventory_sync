@@ -1,6 +1,6 @@
 export const FetchProductQuery = `
-             query ($first: Int, $after: String) {
-  products(first: $first, after: $after) {
+             query ($first: Int, $after: String = null ,$query:String = null, $before:String, $last:Int) {
+  products(first: $first, after: $after,query:$query, before:$before, last:$last) {
     edges {
       node {
         id
@@ -12,8 +12,24 @@ export const FetchProductQuery = `
     pageInfo {
       hasNextPage
       endCursor
-    }
+      hasPreviousPage
+      startCursor
+    } 
   }
 }
 
             `;
+
+export const fetchVendorsQuery = `
+          query productVendors($first: Int!, $after: String) {
+            productVendors(first: $first, after: $after) {
+              edges {
+                node
+              }
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+            }
+          }
+        `;
