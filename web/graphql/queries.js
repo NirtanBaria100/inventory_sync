@@ -33,3 +33,24 @@ export const fetchVendorsQuery = `
             }
           }
         `;
+
+export const fetchProductByIdQuery = `query GetProduct($id: ID!) {
+  product(id: $id) {
+    id
+    title
+    vendor
+    variants(first: 10) {
+      nodes {
+        id
+        title
+        price
+      }
+    }
+    collections(first: 10) {
+      nodes {
+        id
+        title
+      }
+    }
+  }
+}`;

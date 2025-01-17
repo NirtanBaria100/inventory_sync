@@ -6,6 +6,6 @@ const router = express.Router();
 
 router.post("/batch", productController.getProductBatch);
 router.get("/vendors", productController.fetchStoreVendors);
-router.post("/import", productController.ImportProducts);
+router.post("/import", productController.Import_initialize);
 
 export default router;

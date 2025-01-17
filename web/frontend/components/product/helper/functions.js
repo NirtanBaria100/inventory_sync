@@ -114,18 +114,19 @@ export const handleImportProducts = async (selectedResources, products) => {
   const filteredProducts = products.filter((item) =>
     selectedResources.includes(item.id)
   );
-  console.log("Filtered Products:", filteredProducts);
+
+  const notSyncedProducts = filteredProducts.filter((x) => x.status == true);
 
   const URL = "/api/products/import";
 
-  let payload = filteredProducts;
+  let payload = notSyncedProducts;
 
   let response = await fetch(URL, {
     method: "POST",
     body: JSON.stringify(payload),
     headers: {
       "Content-Type": "application/json",
-    }
+    },
   });
 
   let result = await response.json();

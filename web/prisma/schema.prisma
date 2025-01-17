@@ -43,3 +43,16 @@ model Connection {
   sourceStore        Store  @relation("SourceStoreRelation", fields: [sourceStoreId], references: [id])
   destinationStore   Store  @relation("DestinationStoreRelation", fields: [destinationStoreId], references: [id])
 }
+
+model ImportedProductLog {
+  LogID       Int      @id @default(autoincrement())
+  ProductId   String   @db.VarChar(50)
+  ProductName String   @db.VarChar(50)
+  Vendor      String   @db.VarChar(50)
+  ImportDate  DateTime?
+  Status      Boolean?  @default(false)
+  MetaData    Json?
+  ShopName    String   @db.VarChar(50)  
+
+} 
+

@@ -1,6 +1,8 @@
 import axios from "axios";
-import { FetchProductQuery, fetchVendorsQuery } from "../graphql/queries.js";
 import logger from "../config/logger.js";
+import { fetchProductByIdQuery, FetchProductQuery, fetchVendorsQuery } from "../graphql/queries.js";
+import productImportModel from "../models/productImportModel.js";
+import { producerQueue } from "../jobs/importJob.js";
 
 class productController {
   static async getProductBatch(req, res) {
@@ -11,7 +13,7 @@ class productController {
       const { searchQuery, FilterCriteria, endCursor, startCursor, event } =
         req.body;
 
-      const allProducts = [];
+      // const allProducts = [];
       let limit = 250;
 
       const graphqlEndpoint = `https://${shop}/admin/api/2025-01/graphql.json`;
@@ -53,13 +55,33 @@ class productController {
       const data = response.data.data.products;
 
       // Append fetched products to `allProducts`
-      data.edges.forEach(({ node }) => {
-        allProducts.push({
-          id: node.id,
-          title: node.title,
-          vendor: node.vendor,
-        });
-      });
+      // data.edges.forEach(async ({ node }) => {
+      //   let IsExistAlready = await productImportModel.findProductFromImportLogs(
+      //     shop,
+      //     node.id
+      //   );
+
+      //   allProducts.push({
+      //     id: node.id,
+      //     title: node.title,
+      //     vendor: node.vendor,
+      //     status: IsExistAlready?.data?.Status || false,
+      //   });
+      // });
+
+      const allProducts = await Promise.all(
+        data.edges.map(async ({ node }) => {
+          const IsExistAlready =
+            await productImportModel.findProductFromImportLogs(shop, node.id);
+
+          return {
+            id: node.id,
+            title: node.title,
+            vendor: node.vendor,
+            status: IsExistAlready?.data?.Status || false,
+          };
+        })
+      );
 
       logger.info("Fetched products and page info", {
         products: allProducts.length,
@@ -172,14 +194,78 @@ class productController {
       });
     }
   }
-
-  static async ImportProducts(req, res) {
-    const { accessToken, shop } = res.locals.shopify.session;
+  static async Import_initialize(req, res) {
+    const { shop } = res.locals.shopify.session;
     let products = req.body;
-    
-
+    // let marketPlaces = ["abc", "xyz"];
     logger.info("Incoming request", { body: products });
-    return res.status(200).json({ Name: "nirtan" });
+
+    //lets save selected products to database that can be used while
+    //importing products to marketplace upon the execution of queue of this brand store.
+    try {
+      let saveProductsToDatabase =
+        await productImportModel.createImportedProductLog(shop, products);
+
+      if (!saveProductsToDatabase.data) {
+        return res
+          .status(500)
+          .json({ message: saveProductsToDatabase.message });
+      }
+
+      try {
+        await producerQueue(shop);
+      } catch (error) {
+        logger.error(error.message);
+      }
+
+      return res.status(200).json({ message: saveProductsToDatabase.message });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
+  static async findProductById(productId, session) {
+    try {
+      // GraphQL query
+      const query = fetchProductByIdQuery;
+
+      // GraphQL variables
+      const variables = {
+        id: productId,
+      };
+
+      // Set the headers for Shopify GraphQL Admin API
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": session.accessToken, // Use the session's access token
+      };
+
+      // GraphQL endpoint
+      const graphqlEndpoint = `https://${session.shop}/${process.env.GRAPHQL_API_ENDPOINT}`;
+
+      // Make the API call
+      const response = await axios.post(
+        graphqlEndpoint,
+        { query, variables },
+        { headers }
+      );
+
+      // Extract the product data
+      const product = response.data?.data?.product;
+
+      if (!product) {
+        throw new Error("Product not found.");
+      }
+
+      return product;
+    } catch (error) {
+      // Handle errors
+      if (error.response) {
+        console.error("Error response from Shopify API:", error.response.data);
+      } else {
+        console.error("Error fetching product:", error.message);
+      }
+      throw new Error("Failed to fetch product.");
+    }
   }
 }
 
