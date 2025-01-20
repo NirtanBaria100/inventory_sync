@@ -12,7 +12,7 @@ export default function FiltersOptions({ data}) {
     return (    
         <Select
             options={options}
-            placeholder={"Select Vendor"}
+            placeholder={"Search Vendor"}
             onChange={value => dispatch(setQuery({ ...Query, FilterCriteria: value }))}
             value={Query.FilterCriteria}
         />

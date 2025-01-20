@@ -107,9 +107,15 @@ export const handleOnPrevEvent = async (
   dispatch(setLoading(false));
 };
 
-export const handleImportProducts = async (selectedResources, products) => {
+export const handleImportProducts = async (
+  selectedResources,
+  products,
+  setSyncLoader,
+  syncLoader,
+  id
+) => {
   console.log("Starting product import to marketplaces...");
-
+  setSyncLoader(true);
   // Filter products based on selected resource IDs
   const filteredProducts = products.filter((item) =>
     selectedResources.includes(item.id)
@@ -119,7 +125,7 @@ export const handleImportProducts = async (selectedResources, products) => {
 
   const URL = "/api/products/import";
 
-  let payload = notSyncedProducts;
+  let payload = { products: notSyncedProducts, brandStoreId: id };
 
   let response = await fetch(URL, {
     method: "POST",
@@ -130,8 +136,16 @@ export const handleImportProducts = async (selectedResources, products) => {
   });
 
   let result = await response.json();
-  console.log({ result });
+  if (response.ok) {
+    setSyncLoader(false);
 
-  // Optionally, return filtered products if required for further processing
-  return filteredProducts;
+    return shopify.toast.show(result.message);
+  } else {
+    setSyncLoader(false);
+
+    return shopify.toast.show(result.message, { isError: true });
+  }
+
+  // // Optionally, return filtered products if required for further processing
+  // return filteredProducts;
 };

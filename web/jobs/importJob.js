@@ -15,8 +15,12 @@ export async function producerQueueBulk(marketplaces, products) {
   await StoreInQueueInstance.addBulk(data);
 }
 
-export async function producerQueue(shop) {
-  await StoreInQueueInstance.add(QueueName, shop);
+export async function producerQueue(data) {
+  logger.info("Import job is added to queue for shop:" + data.shop);
+
+  await StoreInQueueInstance.add(QueueName, data);
+
+  return "Import job is added to queue for Brand " + data.shop;
 }
 
 export const worker = new Worker(
@@ -27,21 +31,23 @@ export const worker = new Worker(
     logger.info("Data: " + JSON.stringify({ job: job.data }));
 
     let productToImport = await productImportModel.findProductsFromImportLogs(
-      job.data
+      job.data.shop
     );
 
-    let productsToImportFilter = productToImport.filter(
-      (x) => x.status == false
+
+    let productsToImportFilter = productToImport.data.filter(
+      (x) => x.Status == false
     );
+
     logger.info(
-      "Products to be import: " + JSON.stringify({productsToImportFilter})
-    );
+      "Filtered Products to be import count: " + productsToImportFilter.length)
+    ;
 
-    let brandStoreName = job.data;
+    // let brandStoreName = job.data.shop;
     // Uncomment and fix the foreach logic
-    for (const product of productsToImportFilter) {
-        await productImportModel.createProductToMarketPlace(product,brandStoreName);
-    }
+    // for (const product of productsToImportFilter) {
+      await productImportModel.createProductToMarketPlace(productsToImportFilter[0], job.data);
+    // }
   },
   { connection: redisConnection } // Fix connection configuration
 );

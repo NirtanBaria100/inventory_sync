@@ -16,10 +16,11 @@ import { PlusCircleIcon, DeleteIcon } from '@shopify/polaris-icons';
 
 export default function Table({ TableData, Headings }) {
     const { Query, loading, hasNextPage, hasPreviousPage, startCursor, endCursor, value } = useSelector(state => state.products);
+    const [syncLoader, setSyncLoader] = useState(false);
     const dispatch = useDispatch();
-    const [syncDsyncButtonStatus, setSyncDsyncButtonStatus] = useState("");
     const [promotedBulkActions, setPromotedBulkActions] = useState([]);
-
+    const storeData = useSelector((state) => state.data);
+    // console.log("StoreData:", storeData)
     const Data = TableData;
     const resourceName = {
         singular: 'Data',
@@ -40,25 +41,18 @@ export default function Table({ TableData, Headings }) {
 
 
         if (notSyncProductsCount.length > 0 && syncProductsCount.length > 0) {
-            console.log("Condition true")
-            setPromotedBulkActions([
-                {
-                    content: 'Sync',
-                    icon: PlusCircleIcon,
-                    onAction: () => handleImportProducts(selectedResources, value),
-                },
-                {
-                    content: 'Desync',
-                    icon: PlusCircleIcon,
-                    onAction: () => handleImportProducts(selectedResources, value),
-                }
-            ]);
+            console.log("Condition true");
+            setPromotedBulkActions([]);
+
+            shopify.toast.show("You can only select synced or un-synced products at a time.", { isError: true });
+
         } else if (syncProductsCount.length > 0) {
             setPromotedBulkActions([
                 {
                     content: 'Desync',
                     icon: PlusCircleIcon,
-                    onAction: () => handleImportProducts(selectedResources, value),
+                    disabled: syncLoader,
+                    onAction: () => handleImportProducts(selectedResources, value, setSyncLoader, syncLoader,storeData.id),
                 }
             ]);
         }
@@ -67,7 +61,8 @@ export default function Table({ TableData, Headings }) {
                 {
                     content: 'Sync',
                     icon: PlusCircleIcon,
-                    onAction: () => handleImportProducts(selectedResources, value),
+                    disabled: syncLoader,
+                    onAction: () => handleImportProducts(selectedResources, value, setSyncLoader, syncLoader,storeData.id),
                 }
             ]);
         }
@@ -84,8 +79,6 @@ export default function Table({ TableData, Headings }) {
                 key={id}
                 selected={selectedResources.includes(id)}
                 position={index}
-            // onNavigation={(value) => ToggleSyncButton(value)}
-            // disabled={syncDsyncButtonStatus != "" && syncDsyncButtonStatus ? !status : status}
 
             >
                 <IndexTable.Cell>

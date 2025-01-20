@@ -1,6 +1,10 @@
 import axios from "axios";
 import logger from "../config/logger.js";
-import { fetchProductByIdQuery, FetchProductQuery, fetchVendorsQuery } from "../graphql/queries.js";
+import {
+  fetchProductByIdQuery,
+  FetchProductQuery,
+  fetchVendorsQuery,
+} from "../graphql/queries.js";
 import productImportModel from "../models/productImportModel.js";
 import { producerQueue } from "../jobs/importJob.js";
 
@@ -19,10 +23,13 @@ class productController {
       const graphqlEndpoint = `https://${shop}/admin/api/2025-01/graphql.json`;
 
       let filterQuery = "";
-      logger.debug("FilterCriteria and searchQuery", {
-        FilterCriteria,
-        searchQuery,
-      });
+      logger.debug(
+        "FilterCriteria and searchQuery" +
+          JSON.stringify({
+            FilterCriteria,
+            searchQuery,
+          })
+      );
 
       if (FilterCriteria !== "") filterQuery = `vendor:${FilterCriteria}`;
       if (searchQuery !== "") filterQuery = `title: like ${searchQuery}`;
@@ -83,10 +90,13 @@ class productController {
         })
       );
 
-      logger.info("Fetched products and page info", {
-        products: allProducts.length,
-        pageInfo: data.pageInfo,
-      });
+      logger.info(
+        "Fetched products and page info" +
+          JSON.stringify({
+            products: allProducts.length,
+            pageInfo: data.pageInfo,
+          })
+      );
 
       return res.status(200).json({
         data: allProducts,
@@ -94,14 +104,20 @@ class productController {
       });
     } catch (error) {
       if (error.response) {
-        logger.error("Error response from Shopify API", {
-          status: error.response.status,
-          data: error.response.data,
-        });
+        logger.error(
+          "Error response from Shopify API" +
+            JSON.stringify({
+              status: error.response.status,
+              data: error.response.data,
+            })
+        );
       } else {
-        logger.error("Unhandled error in getProductBatch", {
-          message: error.message,
-        });
+        logger.error(
+          "Unhandled error in getProductBatch" +
+            JSON.stringify({
+              message: error.message,
+            })
+        );
       }
       return res.status(500).json({ data: [], error: error.message });
     }
@@ -196,7 +212,7 @@ class productController {
   }
   static async Import_initialize(req, res) {
     const { shop } = res.locals.shopify.session;
-    let products = req.body;
+    let {products,brandStoreId} = req.body;
     // let marketPlaces = ["abc", "xyz"];
     logger.info("Incoming request", { body: products });
 
@@ -207,66 +223,26 @@ class productController {
         await productImportModel.createImportedProductLog(shop, products);
 
       if (!saveProductsToDatabase.data) {
+        logger.info(saveProductsToDatabase.message);
         return res
           .status(500)
           .json({ message: saveProductsToDatabase.message });
       }
 
+      logger.info(saveProductsToDatabase.message);
+      let queue_response = "";
       try {
-        await producerQueue(shop);
+        queue_response = await producerQueue({shop,brandStoreId});
       } catch (error) {
         logger.error(error.message);
       }
 
-      return res.status(200).json({ message: saveProductsToDatabase.message });
+      return res.status(200).json({ message: queue_response });
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }
   }
-  static async findProductById(productId, session) {
-    try {
-      // GraphQL query
-      const query = fetchProductByIdQuery;
-
-      // GraphQL variables
-      const variables = {
-        id: productId,
-      };
-
-      // Set the headers for Shopify GraphQL Admin API
-      const headers = {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": session.accessToken, // Use the session's access token
-      };
-
-      // GraphQL endpoint
-      const graphqlEndpoint = `https://${session.shop}/${process.env.GRAPHQL_API_ENDPOINT}`;
-
-      // Make the API call
-      const response = await axios.post(
-        graphqlEndpoint,
-        { query, variables },
-        { headers }
-      );
-
-      // Extract the product data
-      const product = response.data?.data?.product;
-
-      if (!product) {
-        throw new Error("Product not found.");
-      }
-
-      return product;
-    } catch (error) {
-      // Handle errors
-      if (error.response) {
-        console.error("Error response from Shopify API:", error.response.data);
-      } else {
-        console.error("Error fetching product:", error.message);
-      }
-      throw new Error("Failed to fetch product.");
-    }
-  }
+ 
 }
 
 export default productController;

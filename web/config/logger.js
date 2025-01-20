@@ -6,7 +6,9 @@ const logger = createLogger({
   format: format.combine(
     format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
     format.printf(({ timestamp, level, message, stack }) =>
-      stack ? `${timestamp} [${level.toUpperCase()}]: ${stack}` : `${timestamp} [${level.toUpperCase()}]: ${message}`
+      stack
+        ? `${timestamp} [${level.toUpperCase()}]: ${stack}`
+        : `${timestamp} [${level.toUpperCase()}]: ${message}`
     )
   ),
   transports: [
@@ -21,10 +23,7 @@ const logger = createLogger({
 if (process.env.NODE_ENV !== "production") {
   logger.add(
     new transports.Console({
-      format: format.combine(
-        format.colorize(),
-        format.simple()
-      ),
+      format: format.combine(format.colorize(), format.simple()),
     })
   );
 }
