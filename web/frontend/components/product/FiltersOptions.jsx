@@ -8,6 +8,7 @@ export default function FiltersOptions({ data}) {
     const { Query } = products;
 
     const options = data.map(item => ({ value: item, label: item }));
+    options.push({value:"",label:"All vendors"});
 
     return (    
         <Select

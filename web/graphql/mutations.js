@@ -12,3 +12,63 @@ export const collectionCreateMutation = `
           }
         }
       `;
+
+export const addTagsMutation = `mutation addTags($id: ID!, $tags: [String!]!) {
+  tagsAdd(id: $id, tags: $tags) {
+    node {
+      id
+    }
+    userErrors {
+      message
+    }
+  }
+}`;
+
+export const getProductMutation = `
+query GetProduct($id: ID!) {
+product(id: $id) {
+id
+title
+vendor
+descriptionHtml
+options{
+name
+values
+position
+optionValues{
+ name
+ swatch
+ {
+   color
+   image{
+     alt
+     image{
+       altText
+       url
+     }
+   }
+ }
+}
+
+
+}
+variants(first: 10) {
+nodes {
+ id
+ title
+ price
+ sku
+ inventoryQuantity
+ 
+ 
+}
+}
+collections(first: 10) {
+nodes {
+ id
+ title
+}
+}
+}
+}
+`;

@@ -3,7 +3,7 @@
 client_id = "3e416bacdd36ded2b7c6a8faae1dc77c"
 name = "inventory-sync"
 handle = "inventory-sync-70"
-application_url = "https://bridal-managers-executive-nova.trycloudflare.com"
+application_url = "https://aus-hours-calculated-rolled.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "read_products,write_products"
 
 [auth]
 redirect_urls = [
-  "https://bridal-managers-executive-nova.trycloudflare.com/auth/callback",
-  "https://bridal-managers-executive-nova.trycloudflare.com/auth/shopify/callback",
-  "https://bridal-managers-executive-nova.trycloudflare.com/api/auth/callback"
+  "https://aus-hours-calculated-rolled.trycloudflare.com/auth/callback",
+  "https://aus-hours-calculated-rolled.trycloudflare.com/auth/shopify/callback",
+  "https://aus-hours-calculated-rolled.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

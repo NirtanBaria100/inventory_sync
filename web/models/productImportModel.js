@@ -6,11 +6,68 @@ import ProductCollectionModel from "./collectioModel.js";
 import { GetSessionByShopName } from "./dbSessionModel.js";
 import { fetchProductByIdQuery } from "../graphql/queries.js";
 import axios from "axios";
+import ProductModel from "./productModel.js";
+import ImportedProductErrorLog from "./ImportedProductErrorLog.js";
+import { getProductMutation } from "../graphql/mutations.js";
 
 class productImportModel {
-  static async importProductToMarketPlace(product, shop, collectionIds) {
-    // await producerQueueBulk(marketplaces, products);
-    // return { successMessage: "Products has been imported" };
+  static async importProductToMarketPlace(
+    product,
+    shop,
+    MarketPlaceStoreSession
+  ) {
+    try {
+
+
+      let createdProduct = await ProductModel.CreateProduct(
+        MarketPlaceStoreSession,
+        product,
+        shop
+      );
+
+      if (createdProduct) {
+        logger.info("Product has been imported, Product:" + createdProduct.id);
+
+        let AddTags = await ProductModel.CreateTags(
+          MarketPlaceStoreSession,
+          createdProduct,
+          shop
+        );
+
+        if (AddTags) {
+          logger.info(
+            "Product tags has been created for Product:" + createdProduct.id
+          );
+        }
+      }
+    } catch (error) {
+      let errorMessage =
+        "Error while importing Product to marketPlace: " + error.message;
+      logger.info(errorMessage);
+      //maintain a log history if a product could not imported properly
+      try {
+        let createlogs = await ImportedProductErrorLog.CreateErrorLog(
+          product,
+          shop,
+          MarketPlaceStoreSession,
+          errorMessage
+        );
+
+        //Error logs table has the folllowing fields
+        //id, created_date, error_message, marketplace where it was importing product,  product_id and reference id of the brandstore and it will be connected with Store table
+
+        logger.error(
+          "Error while importing Product to marketPlace: ProductDetails: " +
+            JSON.stringify({ product }) +
+            " " +
+            error.message
+        );
+      } catch (error) {
+        logger.error(
+          "Error while creating Error logs in database:" + error.message
+        );
+      }
+    }
   }
 
   static async createProductToMarketPlace(product, shop) {
@@ -65,7 +122,9 @@ class productImportModel {
       );
 
       //Fetch the marketplace session from db
-      let MarketPlaceStoreSession = await GetSessionByShopName(shop.ShopName);
+      let MarketPlaceStoreSession = await GetSessionByShopName(
+        connectedStores.destinationStore.storeName
+      );
 
       if (!MarketPlaceStoreSession) {
         logger.error(
@@ -73,47 +132,49 @@ class productImportModel {
         );
       }
 
-      let collections = productDetails?.collections?.nodes;
+      // let collections = productDetails?.collections?.nodes;
 
-      logger.info(
-        `collections for this product ${product.ProductId}:` +
-          JSON.stringify(collections)
+      // logger.info(
+      //   `collections for this product ${product.ProductId}:` +
+      //     JSON.stringify(collections)
+      // );
+
+      // let collectionIds = [];
+
+      // for (const collection of collections) {
+      //   try {
+      //     let collectionAlreadyExist =
+      //       await ProductCollectionModel.checkExistingShopifyCollection(
+      //         collection.title,
+      //         MarketPlaceStoreSession
+      //       );
+
+      //     if (!collectionAlreadyExist) {
+      //       const collectionData =
+      //         await ProductCollectionModel.CreateCollectionShopify(
+      //           collection.title,
+      //           MarketPlaceStoreSession
+      //         );
+
+      //       collectionIds.push(collectionData);
+      //     } else {
+      //       collectionIds.push(collectionAlreadyExist.id);
+      //     }
+      //   } catch (error) {
+      //     console.error(
+      //       `Error creating collection for ${collection.title}:`,
+      //       error
+      //     );
+      //   }
+      // }
+
+      // // console.log({ collectionIds });
+
+      await this.importProductToMarketPlace(
+        productDetails,
+        shop,
+        MarketPlaceStoreSession
       );
-
-      let collectionIds = [];
-
-      for (const collection of collections) {
-        try {
-          let collectionAlreadyExist =
-            await ProductCollectionModel.checkExistingShopifyCollection(
-              collection.title,
-              MarketPlaceStoreSession
-            );
-
-          if (!collectionAlreadyExist) {
-            const collectionData =
-              await ProductCollectionModel.CreateCollectionShopify(
-                collection.title,
-                MarketPlaceStoreSession
-              );
-
-            collectionIds.push(collectionData);
-          } else {
-            collectionIds.push(collectionAlreadyExist.id);
-          }
-        } catch (error) {
-          console.error(
-            `Error creating collection for ${collection.title}:`,
-            error
-          );
-        }
-      }
-
-      // console.log({ collectionIds });
-
-      await this.importProductToMarketPlace(product, shop, collectionIds);
-
-
     } catch (error) {
       logger.error(error.message);
     }
@@ -243,28 +304,8 @@ class productImportModel {
       }
 
       // GraphQL query
-      const query = `
-        query GetProduct($id: ID!) {
-          product(id: $id) {
-            id
-            title
-            vendor
-            variants(first: 10) {
-              nodes {
-                id
-                title
-                price
-              }
-            }
-            collections(first: 10) {
-              nodes {
-                id
-                title
-              }
-            }
-          }
-        }
-      `;
+      const query = getProductMutation;
+   
 
       // GraphQL variables
       const variables = { id: productId };
@@ -306,8 +347,6 @@ class productImportModel {
       throw new Error(`Failed to fetch product. ${error.message}`);
     }
   }
-
-  
 }
 
 export default productImportModel;
