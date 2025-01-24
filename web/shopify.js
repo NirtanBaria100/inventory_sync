@@ -11,7 +11,8 @@ const DB_PATH = `${process.cwd()}/database.sqlite`;
 
 import {PrismaSessionStorage} from '@shopify/shopify-app-session-storage-prisma';
 import prisma from './config/db.server.js'
-
+import dotenv from "dotenv"
+dotenv.config()
 // import {PrismaClient} from '@prisma/client';
 // const prisma = new PrismaClient();
 const storage = new PrismaSessionStorage(prisma);
@@ -30,6 +31,9 @@ const billingConfig = {
 
 const shopify = shopifyApp({
   api: {
+    apiKey: process.env.SHOPIFY_API_KEY,
+    apiSecretKey: process.env.SHOPIFY_API_SECRET,
+    scopes:process.env.SCOPES.split(","),
     apiVersion: LATEST_API_VERSION,
     restResources,
     future: {

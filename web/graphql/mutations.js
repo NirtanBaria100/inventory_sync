@@ -24,51 +24,38 @@ export const addTagsMutation = `mutation addTags($id: ID!, $tags: [String!]!) {
   }
 }`;
 
-export const getProductMutation = `
-query GetProduct($id: ID!) {
-product(id: $id) {
-id
-title
-vendor
-descriptionHtml
-options{
-name
-values
-position
-optionValues{
- name
- swatch
- {
-   color
-   image{
-     alt
-     image{
-       altText
-       url
-     }
-   }
- }
-}
-
-
-}
-variants(first: 10) {
-nodes {
- id
- title
- price
- sku
- inventoryQuantity
- 
- 
-}
-}
-collections(first: 10) {
-nodes {
- id
- title
-}
-}
-}
-}
-`;
+export const productCreateMutation = `
+            mutation createProduct($input: ProductInput!,$media:[CreateMediaInput!]) {
+              productCreate(input: $input, media: $media) {
+                product {
+                  id
+                  title
+                  handle
+                  variants(first: 10) {
+                    edges {
+                      node {
+                        id
+                        sku
+                        price
+                      }
+                    }
+                  }
+                }
+                userErrors {
+                  field
+                  message
+                }
+              }
+            }
+          `;
+export const productsetMutation = `mutation createProduct($productSet: ProductSetInput!) {
+  productSet( input: $productSet) {
+    product {
+      id
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}`;

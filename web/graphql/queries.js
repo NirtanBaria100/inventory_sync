@@ -69,3 +69,98 @@ export const fetchCollectionByNameQuery = `
           }
         }
       `;
+
+export const getProductQuery = `
+query GetProduct($id: ID!) {
+  product(id: $id) {
+    id
+    title
+    vendor
+    descriptionHtml
+    media(first:250){
+      edges{
+        node{
+          mediaContentType
+          preview{
+            image{
+              url
+              altText
+            }
+          }
+        }
+      }
+    }
+  	options{
+      name
+      values
+      position
+      optionValues{
+        name
+        swatch
+        {
+          color
+          image{
+            alt
+            image{
+              altText
+              url
+            }
+          }
+        }
+      }
+      
+      
+    }
+    variants(first: 10) {
+      nodes {
+        id
+        title
+        price
+        sku
+        compareAtPrice
+        inventoryQuantity
+        selectedOptions{
+          name
+          value
+        }
+        	inventoryItem{
+            tracked
+            inventoryLevels(first: 4) {
+                     edges {
+                       node {
+                         id
+                         location{
+                          address{address2}
+                         }
+                         quantities(names: ["committed", "on_hand", "incoming", "available"]) {
+                           name
+                           quantity
+                         }
+                       }
+                     }
+                   }
+        }
+        
+      }
+    }
+    collections(first: 10) {
+      nodes {
+        id
+        title
+      }
+    }
+  }
+}
+`;
+
+export const getLocationQuery = `
+            query {
+              locations(first: 5) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+            }
+          `;

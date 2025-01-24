@@ -45,9 +45,9 @@ export const worker = new Worker(
 
     // let brandStoreName = job.data.shop;
     // Uncomment and fix the foreach logic
-    // for (const product of productsToImportFilter) {
-      await productImportModel.createProductToMarketPlace(productsToImportFilter[0], job.data);
-    // }
+    for (const product of productsToImportFilter) {
+      await productImportModel.createProductToMarketPlace(product, job.data);
+    }
   },
   { connection: redisConnection } // Fix connection configuration
 );

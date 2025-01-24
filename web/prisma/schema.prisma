@@ -26,50 +26,47 @@ model Session {
   emailVerified Boolean?  @default(false)
 }
 
-
 model Store {
-  id                      Int           @id @default(autoincrement())
-  storeName               String
-  key                     String
-  type                    String
-  sourceConnections       Connection[]  @relation("SourceStoreRelation")
-  destinationConnections  Connection[]  @relation("DestinationStoreRelation")
+  id                     Int          @id @default(autoincrement())
+  storeName              String
+  key                    String
+  type                   String
+  sourceConnections      Connection[] @relation("SourceStoreRelation")
+  destinationConnections Connection[] @relation("DestinationStoreRelation")
 
   // Relation to the ErrorLog table
-  errorLogs               ImportedProductErrorLog[]
+  errorLogs ImportedProductErrorLog[]
 }
 
 model ImportedProductErrorLog {
-  id             Int      @id @default(autoincrement())
-  createdDate    DateTime @default(now())
-  errorMessage   String   @db.Text()
-  marketplace    String   // Name of the marketplace (e.g., Amazon, eBay)
-  productId      String?  // Product ID related to the error
-  referenceId    Int?  // Reference ID of the brand store
-  storeId        Int      // Foreign key referencing Store
-  store          Store    @relation(fields: [storeId], references: [id])
+  id           Int      @id @default(autoincrement())
+  createdDate  DateTime @default(now())
+  errorMessage String   @db.Text()
+  marketplace  String // Name of the marketplace (e.g., Amazon, eBay)
+  productId    String? // Product ID related to the error
+  referenceId  Int? // Reference ID of the brand store
+  storeId      Int // Foreign key referencing Store
+  store        Store    @relation(fields: [storeId], references: [id])
 
-  @@index([storeId])      // Add an index for quicker queries based on the store
+  @@index([storeId]) // Add an index for quicker queries based on the store
 }
-
 
 model Connection {
   id                 Int   @id @default(autoincrement())
   sourceStoreId      Int
   destinationStoreId Int
-  sourceStore        Store  @relation("SourceStoreRelation", fields: [sourceStoreId], references: [id])
-  destinationStore   Store  @relation("DestinationStoreRelation", fields: [destinationStoreId], references: [id])
+  sourceStore        Store @relation("SourceStoreRelation", fields: [sourceStoreId], references: [id])
+  destinationStore   Store @relation("DestinationStoreRelation", fields: [destinationStoreId], references: [id])
 }
 
 model ImportedProductLog {
-  LogID       Int      @id @default(autoincrement())
-  ProductId   String   @db.VarChar(50)
-  ProductName String   @db.VarChar(50)
-  Vendor      String   @db.VarChar(50)
-  ImportDate  DateTime?
-  Status      Boolean?  @default(false)
-  MetaData    Json?
-  ShopName    String   @db.VarChar(50)  
-
-} 
-
+  LogID             Int       @id @default(autoincrement())
+  ProductId         String    @unique @db.VarChar(50)
+  ProductName       String    @db.VarChar(50)
+  Vendor            String    @db.VarChar(50)
+  ImportDate        DateTime?
+  ProductReferences Json?
+  Status            Boolean?  @default(false)
+  MetaData          Json?
+  ShopName          String    @db.VarChar(50)
+}

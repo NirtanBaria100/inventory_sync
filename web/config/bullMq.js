@@ -10,7 +10,7 @@ export const defaultQueueConfig = {
       count: 100,
       age: 60 * 60 * 24,
     },
-    attempts: 3,
+    attempts: 1,
     backoff: {
       type: "exponential",
       delay: 1000,

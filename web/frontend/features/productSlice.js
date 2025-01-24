@@ -8,10 +8,10 @@ const initialState = {
     FilterCriteria: "",
   },
   vendors: [],
-  startCursor:"",
-  endCursor:"",
-  hasNextPage:false,
-  hasPreviousPage:false
+  startCursor: "",
+  endCursor: "",
+  hasNextPage: false,
+  hasPreviousPage: false,
 };
 
 const productSlice = createSlice({
@@ -24,6 +24,17 @@ const productSlice = createSlice({
       // which detects changes to a "draft state" and produces a brand new
       // immutable state based off those changes
       return { ...state, value: action.payload };
+    },
+    updateProductStatus: (state, action) => {
+      const products = state.value;
+      let { productsIdsToUpdate, Status } = action.payload;
+      let updatedProducts = products.map((product) => {
+        return productsIdsToUpdate.includes(product.id)
+          ? { ...product, status: Status }
+          : product;
+      });
+
+      return { ...state, value: updatedProducts };
     },
     setLoading: (state, action) => {
       return { ...state, loading: action.payload };
@@ -45,11 +56,21 @@ const productSlice = createSlice({
     },
     setHasPreviousPage: (state, action) => {
       return { ...state, hasPreviousPage: action.payload };
-    }
+    },
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { setProducts, setLoading, setQuery,setVendors,setHasNextPage,setHasPreviousPage,setEndCursor,setStartCursor} = productSlice.actions;
+export const {
+  setProducts,
+  setLoading,
+  setQuery,
+  setVendors,
+  setHasNextPage,
+  setHasPreviousPage,
+  setEndCursor,
+  setStartCursor,
+  updateProductStatus,
+} = productSlice.actions;
 
 export default productSlice.reducer;

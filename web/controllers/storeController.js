@@ -6,7 +6,7 @@ import logger from '../config/logger.js';
 // returns the whole row from the store table 
 export const getStoreData = async (req, res) => {
   const shop = res.locals.shopify.session.shop;
-
+  console.log(res.locals.shopify.session)
   try {
     logger.info("Fetching store data.", { shop });
 

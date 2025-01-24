@@ -17,6 +17,7 @@ import {
 // we create a connection between two stores
 export const createConnection = async (req, res) => {
   const shop = res.locals.shopify.session.shop;
+  console.log(res.locals.shopify.session)
   const key = req.body.key;
 
   logger.info(`Received connection request from shop: ${shop}`);

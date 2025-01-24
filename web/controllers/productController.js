@@ -7,6 +7,8 @@ import {
 } from "../graphql/queries.js";
 import productImportModel from "../models/productImportModel.js";
 import { producerQueue } from "../jobs/importJob.js";
+import ImportedProductsLogsModel from "../models/importedProductLog.js";
+import { UnSyncProducerQueue } from "../jobs/ProdcutUnsyncJob.js";
 
 class productController {
   static async getProductBatch(req, res) {
@@ -212,9 +214,9 @@ class productController {
   }
   static async Import_initialize(req, res) {
     const { shop } = res.locals.shopify.session;
-    let {products,brandStoreId} = req.body;
+    let { products, brandStoreId } = req.body;
     // let marketPlaces = ["abc", "xyz"];
-    logger.info("Incoming request", { body: products });
+    logger.info("Incoming request Products", { body: products });
 
     //lets save selected products to database that can be used while
     //importing products to marketplace upon the execution of queue of this brand store.
@@ -232,7 +234,7 @@ class productController {
       logger.info(saveProductsToDatabase.message);
       let queue_response = "";
       try {
-        queue_response = await producerQueue({shop,brandStoreId});
+        queue_response = await producerQueue({ shop, brandStoreId });
       } catch (error) {
         logger.error(error.message);
       }
@@ -242,7 +244,24 @@ class productController {
       return res.status(500).json({ message: error.message });
     }
   }
- 
+
+  static async unsyn_process_initialize(req, res) {
+    try {
+      const { shop } = res.locals.shopify.session;
+
+      let { products, brandStoreId } = req.body;
+
+      let productsIds = products.map((product) => product.id);
+
+      try {
+        await UnSyncProducerQueue({  productsIds, brandStoreId,shop });
+      } catch (error) {
+        logger.error(error.message);
+      }
+    } catch (error) {}
+
+    return res.status(200).json("unsync process initialized ! 😂");
+  }
 }
 
 export default productController;

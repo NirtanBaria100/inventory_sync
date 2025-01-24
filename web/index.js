@@ -12,14 +12,12 @@ import storeRoutes from "./routes/storeRoutes.js";
 import connectionRoutes from "./routes/connectionRoutes.js";
 import productsRoutes from "./routes/productsRoutes.js";
 
-import bodyParser from 'body-parser';
+import bodyParser from "body-parser";
 
 const PORT = parseInt(
   process.env.BACKEND_PORT || process.env.PORT || "3000",
   10
 );
-
-
 
 const STATIC_PATH =
   process.env.NODE_ENV === "production"
@@ -29,7 +27,6 @@ const STATIC_PATH =
 const app = express();
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
-
 
 // Set up Shopify authentication and webhook handling
 app.get(shopify.config.auth.path, shopify.auth.begin());
@@ -54,6 +51,107 @@ app.use(
 app.use("/api/*", shopify.validateAuthenticatedSession());
 
 app.use(express.json());
+
+const query = `mutation {
+  bulkOperationRunQuery(
+    query: """
+    {
+      collections{
+        edges {
+          node {
+            id
+            handle
+            title
+            descriptionHtml
+            sortOrder
+            templateSuffix
+            updatedAt
+            publishedOnCurrentPublication
+            image {
+              width
+              height
+              url
+              altText
+            }
+            ruleSet {
+              appliedDisjunctively
+              rules {
+                column
+                relation
+                condition
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+  ) {
+     bulkOperation {
+      id
+      status
+      url
+      createdAt
+      completedAt
+      errorCode
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}`;
+
+// async function runBulkOperation() {
+//   try {
+//     const SHOPIFY_API_URL = 'https://siar-development.myshopify.com/admin/api/2024-10/graphql.json';
+//     const response = await fetch(SHOPIFY_API_URL, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'X-Shopify-Access-Token': "shpua_6c43e3033b11ac846b0dc1508e41ae98",
+//       },
+//       body: JSON.stringify({ query: query }),
+//     });
+
+//     const responseBody = await response.json();
+//     console.log('Bulk Operation Response:', responseBody.data.bulkOperationRunQuery);
+//   } catch (error) {
+//     console.error('Error running bulk operation:', error);
+//   }
+// }
+// // runBulkOperation();
+// setInterval(async ()=>{
+//   const id = "5217808351530";
+//           const query = `query {
+//             node(id: "gid://shopify/BulkOperation/2988885311574") {
+//               ... on BulkOperation {
+//                 id
+//                 status
+//                 errorCode
+//                 createdAt
+//                 completedAt
+//                 objectCount
+//                 fileSize
+//                 url
+//                 partialDataUrl
+//               }
+//             }
+//           }`
+//           const URI = `https://siar-development.myshopify.com/admin/api/2024-10/graphql.json`;
+//           const response = await fetch(URI, {
+//               method: "POST",
+//               headers: {
+//                   'X-Shopify-Access-Token': "shpua_6c43e3033b11ac846b0dc1508e41ae98",
+//                   'Content-Type': 'application/json'
+//               },
+//               body: JSON.stringify({
+//                   query: query
+//               })
+//           })
+//           const  data  = await response.json();
+//           console.log("this is data : ", data)
+// },5000)
 
 //maadhwan
 app.use("/api/shop", storeRoutes);

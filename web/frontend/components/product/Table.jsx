@@ -11,7 +11,7 @@ import {
 } from '@shopify/polaris';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { handleImportProducts, handleOnNextEvent, handleOnPrevEvent } from './helper/functions';
+import { handleSyncProducts, handleOnNextEvent, handleOnPrevEvent, handleUnSyncProducts } from './helper/functions';
 import { PlusCircleIcon, DeleteIcon } from '@shopify/polaris-icons';
 
 export default function Table({ TableData, Headings }) {
@@ -49,10 +49,10 @@ export default function Table({ TableData, Headings }) {
         } else if (syncProductsCount.length > 0) {
             setPromotedBulkActions([
                 {
-                    content: 'Desync',
+                    content: 'Unsync',
                     icon: PlusCircleIcon,
                     disabled: syncLoader,
-                    onAction: () => handleImportProducts(selectedResources, value, setSyncLoader, syncLoader,storeData.id),
+                    onAction: () => handleUnSyncProducts(selectedResources, value, setSyncLoader, syncLoader, storeData.id, dispatch),
                 }
             ]);
         }
@@ -62,11 +62,11 @@ export default function Table({ TableData, Headings }) {
                     content: 'Sync',
                     icon: PlusCircleIcon,
                     disabled: syncLoader,
-                    onAction: () => handleImportProducts(selectedResources, value, setSyncLoader, syncLoader,storeData.id),
+                    onAction: () => handleSyncProducts(selectedResources, value, setSyncLoader, syncLoader, storeData.id, dispatch),
                 }
             ]);
         }
-    }, [selectedResources, Data, value]);
+    }, [selectedResources, Data, value, syncLoader]);
 
 
     const rowMarkup = Data.map(
@@ -76,7 +76,7 @@ export default function Table({ TableData, Headings }) {
         ) => (
             <IndexTable.Row
                 id={id}
-                key={id}
+                key={index}
                 selected={selectedResources.includes(id)}
                 position={index}
 
@@ -88,7 +88,7 @@ export default function Table({ TableData, Headings }) {
                 </IndexTable.Cell>
                 <IndexTable.Cell>{title}</IndexTable.Cell>
                 <IndexTable.Cell>{vendor}</IndexTable.Cell>
-                <IndexTable.Cell><InlineStack><Badge tone={status ? 'success' : "info-strong"}>  {status ? "Already synced" : "Not synced"}</Badge></InlineStack></IndexTable.Cell>
+                <IndexTable.Cell><InlineStack><Badge tone={status ? 'success' : "info-strong"}>  {status ? "Synced" : "Not synced"}</Badge></InlineStack></IndexTable.Cell>
             </IndexTable.Row>
         ),
     );

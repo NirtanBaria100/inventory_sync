@@ -8,7 +8,8 @@ import { fetchProductByIdQuery } from "../graphql/queries.js";
 import axios from "axios";
 import ProductModel from "./productModel.js";
 import ImportedProductErrorLog from "./ImportedProductErrorLog.js";
-import { getProductMutation } from "../graphql/mutations.js";
+import { getProductQuery } from "../graphql/queries.js";
+import ImportedProductsLogsModel from "./importedProductLog.js";
 
 class productImportModel {
   static async importProductToMarketPlace(
@@ -16,34 +17,78 @@ class productImportModel {
     shop,
     MarketPlaceStoreSession
   ) {
+    //Create product on marketplace.
     try {
-
-
       let createdProduct = await ProductModel.CreateProduct(
         MarketPlaceStoreSession,
         product,
         shop
       );
 
-      if (createdProduct) {
-        logger.info("Product has been imported, Product:" + createdProduct.id);
+      logger.info(`${createdProduct.id} Product has been imported Successfully! 🍸`);
 
-        let AddTags = await ProductModel.CreateTags(
-          MarketPlaceStoreSession,
+      //Update the sync Status of imported product to datbase
+
+      try {
+        await ImportedProductsLogsModel.UpdateStatus(
+          true,
+          product.id,
           createdProduct,
+          MarketPlaceStoreSession,
           shop
         );
 
-        if (AddTags) {
-          logger.info(
-            "Product tags has been created for Product:" + createdProduct.id
-          );
-        }
+        logger.info(
+          "Product sync status updated at ImportedProductsLogs table in database Product id:" +
+            product.id
+        );
+      } catch (error) {
+        logger.error(error);
       }
+
+      //Creates tags for the product
+      //I have decided to add tags seperatly using addTags api because If a included tags in the product create api so it will
+      //overwrite the existing tags which is not required.
+      // try {
+      //   let AddTags = await ProductModel.CreateTags(
+      //     MarketPlaceStoreSession,
+      //     createdProduct,
+      //     shop
+      //   );
+
+      //   if (AddTags) {
+      //     logger.info(
+      //       "Product tags has been created for Product:" + createdProduct.id
+      //     );
+      //   }
+      // } catch (error) {
+      //   logger.error(error);
+      // }
+
+      // //Creates variants for the product
+      // try {
+      //   let AddVariants = await ProductModel.CreateVariants(
+      //     MarketPlaceStoreSession,
+      //     createdProduct,
+      //     product,
+      //     shop
+      //   );
+
+      //   if (AddVariants) {
+      //     logger.info(
+      //       "Product variants has been created for Product:" + createdProduct.id
+      //     );
+      //   }
+
+      // } catch (error) {
+      //   logger.error(error);
+      // }
     } catch (error) {
       let errorMessage =
         "Error while importing Product to marketPlace: " + error.message;
-      logger.info(errorMessage);
+
+      logger.error(errorMessage);
+
       //maintain a log history if a product could not imported properly
       try {
         let createlogs = await ImportedProductErrorLog.CreateErrorLog(
@@ -57,8 +102,8 @@ class productImportModel {
         //id, created_date, error_message, marketplace where it was importing product,  product_id and reference id of the brandstore and it will be connected with Store table
 
         logger.error(
-          "Error while importing Product to marketPlace: ProductDetails: " +
-            JSON.stringify({ product }) +
+          "Error while importing Product to marketPlace: Product id: " +
+            product.id +
             " " +
             error.message
         );
@@ -95,6 +140,7 @@ class productImportModel {
         shop.brandStoreId
       );
 
+
       logger.info(
         "The marketplaces that are connected with with this brand store is: " +
           JSON.stringify({ connectedStores })
@@ -110,9 +156,7 @@ class productImportModel {
         );
       }
 
-      logger.info(
-        "Brand store session: " + JSON.stringify({ BrandStoreSession })
-      );
+      logger.info("Brand store session: " + BrandStoreSession.id);
       // Check if the collection already exists
 
       //To fetch the further details for the product we call graphql api
@@ -132,44 +176,6 @@ class productImportModel {
         );
       }
 
-      // let collections = productDetails?.collections?.nodes;
-
-      // logger.info(
-      //   `collections for this product ${product.ProductId}:` +
-      //     JSON.stringify(collections)
-      // );
-
-      // let collectionIds = [];
-
-      // for (const collection of collections) {
-      //   try {
-      //     let collectionAlreadyExist =
-      //       await ProductCollectionModel.checkExistingShopifyCollection(
-      //         collection.title,
-      //         MarketPlaceStoreSession
-      //       );
-
-      //     if (!collectionAlreadyExist) {
-      //       const collectionData =
-      //         await ProductCollectionModel.CreateCollectionShopify(
-      //           collection.title,
-      //           MarketPlaceStoreSession
-      //         );
-
-      //       collectionIds.push(collectionData);
-      //     } else {
-      //       collectionIds.push(collectionAlreadyExist.id);
-      //     }
-      //   } catch (error) {
-      //     console.error(
-      //       `Error creating collection for ${collection.title}:`,
-      //       error
-      //     );
-      //   }
-      // }
-
-      // // console.log({ collectionIds });
-
       await this.importProductToMarketPlace(
         productDetails,
         shop,
@@ -183,7 +189,7 @@ class productImportModel {
 
   static async createImportedProductLog(shop, products) {
     // Validate input data
-    if (!products) {
+    if (!products.length > 0) {
       return { message: "Invalid product data provided" };
     }
 
@@ -201,6 +207,7 @@ class productImportModel {
       // Create a new imported product log
       const createdLogs = await prisma.importedProductLog.createMany({
         data: insertedData,
+        skipDuplicates: true,
       });
 
       // Return success response
@@ -291,7 +298,6 @@ class productImportModel {
 
   static async findProductById(productId, session) {
     try {
-      console.log({ session, productId });
 
       // Validate productId
       if (!productId.startsWith("gid://shopify/Product/")) {
@@ -304,8 +310,7 @@ class productImportModel {
       }
 
       // GraphQL query
-      const query = getProductMutation;
-   
+      const query = getProductQuery;
 
       // GraphQL variables
       const variables = { id: productId };
@@ -333,7 +338,6 @@ class productImportModel {
         throw new Error("Product not found.");
       }
 
-      console.log({ product });
       return product;
     } catch (error) {
       if (error.response) {
@@ -345,6 +349,71 @@ class productImportModel {
         console.error("Error fetching product:", error.message);
       }
       throw new Error(`Failed to fetch product. ${error.message}`);
+    }
+  }
+
+  static async deleteProductToMarketPlace(productsIds, shop, marketPlaces) {
+    logger.info("Product delete Process Started!👌" + shop);
+
+    try {
+      let importedProductLogs = await ImportedProductsLogsModel.findManyLogs(
+        productsIds,
+        shop
+      );
+
+      if (!importedProductLogs || importedProductLogs.length === 0) {
+        logger.error("No Products found to be deleted for Brand:" + shop);
+        return;
+      }
+
+      let ProductMetadata = [];
+      for (const log of importedProductLogs) {
+        for (const ProductReference of log.ProductReferences) {
+          if (ProductReference.marketplace) {
+            const Session = await GetSessionByShopName(
+              ProductReference.marketplace
+            );
+            if (Session) {
+              ProductMetadata.push({
+                marketPlace: ProductReference.marketplace,
+                refId: ProductReference.id,
+                accessToken: Session.accessToken,
+                Id: log.ProductId,
+              });
+            }
+          } else {
+            logger.error(`Invalid marketplace: ${ProductReference.marketplace} in ProductReference`);
+          }
+        }
+      }
+
+      const uniqueMarketplaces = [
+        ...new Map(
+          ProductMetadata.map((item) => [
+            item.marketPlace,
+            { marketPlace: item.marketPlace, accessToken: item.accessToken },
+          ])
+        ).values(),
+      ];
+
+      const marketPlaces = uniqueMarketplaces;
+
+      for (const marketPlace of marketPlaces) {
+        //fetch products for this marketplace
+        let FilteredProductsByMarketPlace = ProductMetadata.filter(
+          (product) => product.marketPlace == marketPlace.marketPlace
+        );
+
+        //map product idss
+        let mapFilteredProducts = FilteredProductsByMarketPlace.map(
+          (product) => ({ refId: product.refId, id: product.Id })
+        );
+
+        await ProductModel.deleteProductsBulk(mapFilteredProducts, marketPlace);
+      }
+    } catch (error) {
+      console.log(error);
+      logger.error(error);
     }
   }
 }

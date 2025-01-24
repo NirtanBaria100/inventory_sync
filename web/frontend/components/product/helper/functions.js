@@ -5,6 +5,7 @@ import {
   setLoading,
   setProducts,
   setStartCursor,
+  updateProductStatus,
 } from "../../../features/productSlice";
 
 export async function getbatchProducts(page, Query) {
@@ -107,45 +108,135 @@ export const handleOnPrevEvent = async (
   dispatch(setLoading(false));
 };
 
-export const handleImportProducts = async (
+export const handleSyncProducts = async (
   selectedResources,
   products,
   setSyncLoader,
   syncLoader,
-  id
+  id,
+  dispatch
 ) => {
   console.log("Starting product import to marketplaces...");
+
   setSyncLoader(true);
+
   // Filter products based on selected resource IDs
   const filteredProducts = products.filter((item) =>
     selectedResources.includes(item.id)
   );
 
-  const notSyncedProducts = filteredProducts.filter((x) => x.status == true);
+  // Filter products that are not synced
+  const notSyncedProducts = filteredProducts.filter((x) => !x.status);
 
-  const URL = "/api/products/import";
-
-  let payload = { products: notSyncedProducts, brandStoreId: id };
-
-  let response = await fetch(URL, {
-    method: "POST",
-    body: JSON.stringify(payload),
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  let result = await response.json();
-  if (response.ok) {
+  // If no products need syncing, exit early
+  if (notSyncedProducts.length === 0) {
     setSyncLoader(false);
-
-    return shopify.toast.show(result.message);
-  } else {
-    setSyncLoader(false);
-
-    return shopify.toast.show(result.message, { isError: true });
+    shopify.toast.show("No products to sync.");
+    return;
   }
 
-  // // Optionally, return filtered products if required for further processing
-  // return filteredProducts;
+  const URL = "/api/products/sync";
+
+  const payload = { products: notSyncedProducts, brandStoreId: id };
+
+  try {
+    const response = await fetch(URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Update product status in the store
+      dispatch(
+        updateProductStatus({
+          productsIdsToUpdate: filteredProducts.map((product) => product.id),
+          Status: true,
+        })
+      );
+      shopify.toast.show(result.message || "Products imported successfully!");
+    } else {
+      // Handle error response
+      shopify.toast.show(result.message || "Failed to import products.", {
+        isError: true,
+      });
+    }
+  } catch (error) {
+    // Handle network or unexpected errors
+    console.error("Error importing products:", error);
+    shopify.toast.show("An error occurred while importing products.", {
+      isError: true,
+    });
+  } finally {
+    setSyncLoader(false); // Ensure the loader is stopped
+  }
+};
+
+export const handleUnSyncProducts = async (
+  selectedResources,
+  products,
+  setSyncLoader,
+  syncLoader,
+  id,
+  dispatch
+) => {
+  shopify.toast.show("Unsync operation in process...");
+  setSyncLoader(true);
+
+  // Filter products based on selected resource IDs
+  const filteredProducts = products.filter((item) =>
+    selectedResources.includes(item.id)
+  );
+  console.log(filteredProducts);
+
+  // Filter products that are  synced
+  const SyncedProducts = filteredProducts.filter((x) => x.status);
+
+  // If no products need un-syncing, exit early
+  if (SyncedProducts.length === 0) {
+    setSyncLoader(false);
+    shopify.toast.show("No products to sync.");
+    return;
+  }
+
+  const URL = "/api/products/unsync";
+  const payload = { products: SyncedProducts, brandStoreId: id };
+
+  try {
+    const response = await fetch(URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Update product status in the store
+      dispatch(
+        updateProductStatus({
+          productsIdsToUpdate: SyncedProducts.map((product) => product.id),
+          Status: false,
+        })
+      );
+      shopify.toast.show(
+        result.message || "Products successfully desyncronized!"
+      );
+    } else {
+      // Handle error response
+      shopify.toast.show(result.message || "Failed to desyncronize products.", {
+        isError: true,
+      });
+    }
+  } catch (error) {
+    shopify.toast.show("Error while desyncronize");
+  } finally {
+    setSyncLoader(false); // Ensure the loader is stopped
+  }
 };

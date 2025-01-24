@@ -1,8 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-
-
 // we check if it is a source shop
 export const checkSourceShop = async (shop) => {
   //this is checked using the shop name
@@ -29,8 +27,7 @@ export const checkExistingConnection = async (sourceShopId) => {
   });
 };
 
-
-// creates a new connection 
+// creates a new connection
 export const createNewConnection = async (sourceShopId, destinationShopId) => {
   return await prisma.connection.create({
     data: {
@@ -40,10 +37,10 @@ export const createNewConnection = async (sourceShopId, destinationShopId) => {
   });
 };
 
-
 // cehcking if any destination store is connected
 export const findConnectedDestinationStores = async (sourceStoreId) => {
-  return await prisma.connection.findFirst({     // using find as a source store can have only one destination stores connected
+  return await prisma.connection.findFirst({
+    // using find as a source store can have only one destination stores connected
     where: {
       sourceStoreId,
     },
@@ -55,7 +52,8 @@ export const findConnectedDestinationStores = async (sourceStoreId) => {
 
 // chcking if any source store is connected
 export const findConnectedSourceStores = async (destinationStoreId) => {
-  return await prisma.connection.findMany({   // using findmany as a destination store can have many source stores connected
+  return await prisma.connection.findMany({
+    // using findmany as a destination store can have many source stores connected
     where: {
       destinationStoreId,
     },
@@ -65,9 +63,8 @@ export const findConnectedSourceStores = async (destinationStoreId) => {
   });
 };
 
-
 // finding a store by name
-// new function since it can be destiantion or source shop 
+// new function since it can be destiantion or source shop
 export const findStoreByName = (storeName) => {
   return prisma.store.findFirst({
     where: { storeName },
@@ -75,14 +72,14 @@ export const findStoreByName = (storeName) => {
   });
 };
 
-// finds connections using source store id 
+// finds connections using source store id
 export const findConnectionBySourceId = (storeId) => {
   return prisma.connection.findFirst({
     where: { sourceStoreId: storeId },
   });
 };
 
-// finds connections using destination store id 
+// finds connections using destination store id
 export const findConnectionByDestinationId = (storeId) => {
   return prisma.connection.findFirst({
     where: { destinationStoreId: storeId },
@@ -98,8 +95,7 @@ export const updateStoreType = (storeId, type) => {
 
 
 
-
-// deletes the conenction using both the source store id and the destination store id 
+// deletes the conenction using both the source store id and the destination store id
 export const deleteConnection = async (sourceStoreId, destinationStoreId) => {
   return await prisma.connection.deleteMany({
     where: {
