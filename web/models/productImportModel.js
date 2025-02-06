@@ -1,15 +1,15 @@
 import logger from "../config/logger.js";
-import { producerQueueBulk } from "../jobs/importJob.js";
 import prisma from "../config/db.server.js";
 import { findConnectedDestinationStores } from "./connectionModel.js";
-import ProductCollectionModel from "./collectioModel.js";
 import { GetSessionByShopName } from "./dbSessionModel.js";
-import { fetchProductByIdQuery } from "../graphql/queries.js";
 import axios from "axios";
 import ProductModel from "./productModel.js";
 import ImportedProductErrorLog from "./ImportedProductErrorLog.js";
 import { getProductQuery } from "../graphql/queries.js";
 import ImportedProductsLogsModel from "./importedProductLog.js";
+import { getRemaining, syncInfoUpdate } from "./syncInfoModel.js";
+import { SHOULD_AUTOBATCH } from "@reduxjs/toolkit";
+import { jobStates } from "../utils/jobStates.js";
 
 class productImportModel {
   static async importProductToMarketPlace(
@@ -19,13 +19,16 @@ class productImportModel {
   ) {
     //Create product on marketplace.
     try {
+
       let createdProduct = await ProductModel.CreateProduct(
         MarketPlaceStoreSession,
         product,
         shop
       );
 
-      logger.info(`${createdProduct.id} Product has been imported Successfully! 🍸`);
+      logger.info(
+        `${createdProduct.id} Product has been imported Successfully! 🍸`
+      );
 
       //Update the sync Status of imported product to datbase
 
@@ -38,12 +41,30 @@ class productImportModel {
           shop
         );
 
+        
+        let syncStatus = await getRemaining(shop);
+
+        let afterUpdate = await syncInfoUpdate(
+          shop.shop,
+          syncStatus.Total,
+          syncStatus.Remaining + 1,
+          jobStates.Inprogress,
+          product.id
+        );
+
+
+
+        if (afterUpdate.Remaining == syncStatus.Total) {
+          await syncInfoUpdate(shop.shop, syncStatus.Total, syncStatus.Total, jobStates.Finish,"");
+        }
+
         logger.info(
           "Product sync status updated at ImportedProductsLogs table in database Product id:" +
             product.id
         );
+
       } catch (error) {
-        logger.error(error);
+        logger.error("Error while creating products:",error);
       }
 
       //Creates tags for the product
@@ -140,7 +161,6 @@ class productImportModel {
         shop.brandStoreId
       );
 
-
       logger.info(
         "The marketplaces that are connected with with this brand store is: " +
           JSON.stringify({ connectedStores })
@@ -148,7 +168,7 @@ class productImportModel {
 
       // Fetch marketplace session from Db by shopName
 
-      let BrandStoreSession = await GetSessionByShopName(shop.ShopName);
+      let BrandStoreSession = await GetSessionByShopName(shop.shop);
 
       if (!BrandStoreSession) {
         logger.error(
@@ -263,6 +283,7 @@ class productImportModel {
       throw new Error(error.messsage);
     }
   }
+
   static async findProductsFromImportLogs(shop) {
     try {
       let where = {};
@@ -298,7 +319,6 @@ class productImportModel {
 
   static async findProductById(productId, session) {
     try {
-
       // Validate productId
       if (!productId.startsWith("gid://shopify/Product/")) {
         throw new Error("Invalid product ID format.");
@@ -382,7 +402,9 @@ class productImportModel {
               });
             }
           } else {
-            logger.error(`Invalid marketplace: ${ProductReference.marketplace} in ProductReference`);
+            logger.error(
+              `Invalid marketplace: ${ProductReference.marketplace} in ProductReference`
+            );
           }
         }
       }

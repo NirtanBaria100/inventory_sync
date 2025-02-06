@@ -14,9 +14,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { handleSyncProducts, handleOnNextEvent, handleOnPrevEvent, handleUnSyncProducts } from './helper/functions';
 import { PlusCircleIcon, DeleteIcon } from '@shopify/polaris-icons';
 
-export default function Table({ TableData, Headings }) {
+export default function Table({ setIsSyncing, IsSyncing, TableData, Headings }) {
     const { Query, loading, hasNextPage, hasPreviousPage, startCursor, endCursor, value } = useSelector(state => state.products);
-    const [syncLoader, setSyncLoader] = useState(false);
+    // const [syncLoader, setSyncLoader] = useState(false);
     const dispatch = useDispatch();
     const [promotedBulkActions, setPromotedBulkActions] = useState([]);
     const storeData = useSelector((state) => state.data);
@@ -51,8 +51,8 @@ export default function Table({ TableData, Headings }) {
                 {
                     content: 'Unsync',
                     icon: PlusCircleIcon,
-                    disabled: syncLoader,
-                    onAction: () => handleUnSyncProducts(selectedResources, value, setSyncLoader, syncLoader, storeData.id, dispatch),
+                    disabled: IsSyncing,
+                    onAction: () => handleUnSyncProducts(selectedResources, value, setIsSyncing, IsSyncing, storeData.id, dispatch),
                 }
             ]);
         }
@@ -61,12 +61,12 @@ export default function Table({ TableData, Headings }) {
                 {
                     content: 'Sync',
                     icon: PlusCircleIcon,
-                    disabled: syncLoader,
-                    onAction: () => handleSyncProducts(selectedResources, value, setSyncLoader, syncLoader, storeData.id, dispatch),
+                    disabled: IsSyncing,
+                    onAction: () => handleSyncProducts(selectedResources, value, setIsSyncing, IsSyncing, storeData.id, dispatch),
                 }
             ]);
         }
-    }, [selectedResources, Data, value, syncLoader]);
+    }, [selectedResources, Data, value, IsSyncing, setIsSyncing]);
 
 
     const rowMarkup = Data.map(

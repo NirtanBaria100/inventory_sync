@@ -1,4 +1,5 @@
 import prisma from "../config/db.server.js";
+import logger from "../config/logger.js";
 
 class ImportedProductsLogsModel {
   static async UpdateStatus(
@@ -32,8 +33,9 @@ class ImportedProductsLogsModel {
           ProductReferences: ProductReferences,
         },
       });
+      logger.info("Logs has been created for imported product!")
     } catch (error) {
-      console.log(error);
+      logger.info("Error while creating logs for imported products:".error);
       throw new Error(error);
     }
   }

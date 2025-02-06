@@ -11,6 +11,11 @@ router.post(
   checkConnectionMiddleware,
   productController.Import_initialize
 );
-router.post("/unsync", productController.unsyn_process_initialize);
+router.get('/sync-info',checkConnectionMiddleware,productController.CheckSyncInfo)
+router.post(
+  "/unsync",
+  checkConnectionMiddleware,
+  productController.unsyn_process_initialize
+);
 
 export default router;

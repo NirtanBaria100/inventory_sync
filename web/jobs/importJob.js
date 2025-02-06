@@ -2,6 +2,8 @@ import { Queue, Worker } from "bullmq";
 import { defaultQueueConfig, redisConnection } from "../config/bullMq.js";
 import productImportModel from "../models/productImportModel.js";
 import logger from "../config/logger.js";
+import { jobStates } from "../utils/jobStates.js";
+import { getRemaining, syncInfoUpdate } from "../models/syncInfoModel.js";
 
 const QueueName = "Stores-Inqueue-products";
 
@@ -29,19 +31,25 @@ export const worker = new Worker(
     const { products, marketplaces } = job.data; // Access job.data
     logger.info(`Processing job: ${job.id}`);
     logger.info("Data: " + JSON.stringify({ job: job.data }));
+    let syncStatus = await getRemaining(job.data.shop);
+
+
+    //updates the status of job in the database to in-progress
+    console.log("Saving sync info to database!🤔: "+job.data.shop);
+    await syncInfoUpdate(job.data.shop, syncStatus.Total, 0, jobStates.Inprogress,"");
+    
 
     let productToImport = await productImportModel.findProductsFromImportLogs(
       job.data.shop
     );
-
 
     let productsToImportFilter = productToImport.data.filter(
       (x) => x.Status == false
     );
 
     logger.info(
-      "Filtered Products to be import count: " + productsToImportFilter.length)
-    ;
+      "Filtered Products to be import count: " + productsToImportFilter.length
+    );
 
     // let brandStoreName = job.data.shop;
     // Uncomment and fix the foreach logic

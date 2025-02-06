@@ -7,8 +7,9 @@ import {
 } from "../graphql/queries.js";
 import productImportModel from "../models/productImportModel.js";
 import { producerQueue } from "../jobs/importJob.js";
-import ImportedProductsLogsModel from "../models/importedProductLog.js";
 import { UnSyncProducerQueue } from "../jobs/ProdcutUnsyncJob.js";
+import { getSyncInfo, syncInfoCreate } from "../models/syncInfoModel.js";
+import { jobStates } from "../utils/jobStates.js";
 
 class productController {
   static async getProductBatch(req, res) {
@@ -221,6 +222,10 @@ class productController {
     //lets save selected products to database that can be used while
     //importing products to marketplace upon the execution of queue of this brand store.
     try {
+      let syncDetails = {
+        total: products.length,
+      };
+
       let saveProductsToDatabase =
         await productImportModel.createImportedProductLog(shop, products);
 
@@ -234,6 +239,10 @@ class productController {
       logger.info(saveProductsToDatabase.message);
       let queue_response = "";
       try {
+        //I am also managing the queue in database also
+        await syncInfoCreate(syncDetails, shop, jobStates.Inqueue);
+
+        //redis queue
         queue_response = await producerQueue({ shop, brandStoreId });
       } catch (error) {
         logger.error(error.message);
@@ -254,13 +263,28 @@ class productController {
       let productsIds = products.map((product) => product.id);
 
       try {
-        await UnSyncProducerQueue({  productsIds, brandStoreId,shop });
+        await UnSyncProducerQueue({ productsIds, brandStoreId, shop });
       } catch (error) {
         logger.error(error.message);
       }
     } catch (error) {}
 
     return res.status(200).json("unsync process initialized ! 😂");
+  }
+
+  static async CheckSyncInfo(req, res) {
+    try {
+      let { shop } = res.locals.shopify.session;
+      let syncInfo = await getSyncInfo(shop);
+      return res
+        .status(200)
+        .json({ data: syncInfo, message: "Sync info retrieved successfully" });
+    } catch (error) {
+      logger.error("Error while getting sync infomation !", error);
+      return res
+        .status(500)
+        .json({ data: [], message: "Internal server error!" });
+    }
   }
 }
 

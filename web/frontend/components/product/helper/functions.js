@@ -111,14 +111,14 @@ export const handleOnPrevEvent = async (
 export const handleSyncProducts = async (
   selectedResources,
   products,
-  setSyncLoader,
-  syncLoader,
+  setIsSyncing,
+  IsSyncing,
   id,
   dispatch
 ) => {
   console.log("Starting product import to marketplaces...");
 
-  setSyncLoader(true);
+  setIsSyncing(true);
 
   // Filter products based on selected resource IDs
   const filteredProducts = products.filter((item) =>
@@ -130,7 +130,7 @@ export const handleSyncProducts = async (
 
   // If no products need syncing, exit early
   if (notSyncedProducts.length === 0) {
-    setSyncLoader(false);
+    setIsSyncing(false);
     shopify.toast.show("No products to sync.");
     return;
   }
@@ -150,7 +150,12 @@ export const handleSyncProducts = async (
 
     const result = await response.json();
 
+    console.log("Response",response.ok)
+
     if (response.ok) {
+
+  
+      
       // Update product status in the store
       dispatch(
         updateProductStatus({
@@ -158,6 +163,8 @@ export const handleSyncProducts = async (
           Status: true,
         })
       );
+
+     
       shopify.toast.show(result.message || "Products imported successfully!");
     } else {
       // Handle error response
@@ -171,21 +178,19 @@ export const handleSyncProducts = async (
     shopify.toast.show("An error occurred while importing products.", {
       isError: true,
     });
-  } finally {
-    setSyncLoader(false); // Ensure the loader is stopped
-  }
+  } 
 };
 
 export const handleUnSyncProducts = async (
   selectedResources,
   products,
-  setSyncLoader,
-  syncLoader,
+  setIsSyncing,
+  IsSyncing,
   id,
   dispatch
 ) => {
   shopify.toast.show("Unsync operation in process...");
-  setSyncLoader(true);
+  setIsSyncing(true);
 
   // Filter products based on selected resource IDs
   const filteredProducts = products.filter((item) =>
@@ -198,7 +203,7 @@ export const handleUnSyncProducts = async (
 
   // If no products need un-syncing, exit early
   if (SyncedProducts.length === 0) {
-    setSyncLoader(false);
+    setIsSyncing(false);
     shopify.toast.show("No products to sync.");
     return;
   }
@@ -237,6 +242,6 @@ export const handleUnSyncProducts = async (
   } catch (error) {
     shopify.toast.show("Error while desyncronize");
   } finally {
-    setSyncLoader(false); // Ensure the loader is stopped
+    setIsSyncing(false); // Ensure the loader is stopped
   }
 };

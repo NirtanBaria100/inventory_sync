@@ -70,3 +70,12 @@ model ImportedProductLog {
   MetaData          Json?
   ShopName          String    @db.VarChar(50)
 }
+
+model syncStatus {
+  Shop      String   @id
+  Total     Int
+  Remaining Int
+  UpdatedAt DateTime
+  State     String   @default("")
+  ProductImported String @default("")
+}
