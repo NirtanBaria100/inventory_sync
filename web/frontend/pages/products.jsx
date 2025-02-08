@@ -64,7 +64,7 @@ const Products = () => {
 
     
     fetchData();
-  }, [dispatch, Query]);
+  }, []);
 
 
   useEffect(()=>{

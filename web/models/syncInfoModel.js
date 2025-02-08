@@ -1,5 +1,6 @@
 import prisma from "../config/db.server.js";
 import logger from "../config/logger.js";
+import ImportedProductsLogsModel from "./importedProductLog.js";
 
 export async function syncInfoCreate(synDetails, shop, state) {
   console.log({ shop });
@@ -13,6 +14,7 @@ export async function syncInfoCreate(synDetails, shop, state) {
         Total: synDetails.total,
         Shop: shop,
         UpdatedAt: new Date(Date.now()), // Convert timestamp to a Date object
+        CreateAt: new Date(Date.now()),
         State: state,
       },
       update: {
@@ -20,6 +22,7 @@ export async function syncInfoCreate(synDetails, shop, state) {
         Total: synDetails.total,
         Shop: shop,
         State: state,
+        CreateAt: new Date(Date.now()),
         UpdatedAt: new Date(Date.now()), // Convert timestamp to a Date object
       },
     });
@@ -31,7 +34,7 @@ export async function syncInfoCreate(synDetails, shop, state) {
   }
 }
 
-export async function syncInfoUpdate(shop, total, remaining, state, productId) {
+export async function syncInfoUpdate(shop, total, remaining, state) {
   console.log({ shop });
   try {
     let updatedSyncStatus = await prisma.syncStatus.update({
@@ -42,7 +45,6 @@ export async function syncInfoUpdate(shop, total, remaining, state, productId) {
         Remaining: remaining,
         Total: total,
         State: state,
-        ProductImported: productId,
         UpdatedAt: new Date(Date.now()), // Convert timestamp to a Date object
       },
     });
@@ -74,13 +76,22 @@ export async function getRemaining(shop) {
 
 export async function getSyncInfo(shop) {
   try {
-    return await prisma.syncStatus.findFirst({
+    let synInfo = await prisma.syncStatus.findFirst({
       where: {
         Shop: shop,
       },
     });
+
+    let importedProducts = await ImportedProductsLogsModel.getImportedProductLogsDateWise(
+       //Mysql doest not support camparision of date with millisecond
+      synInfo.CreateAt.toISOString().slice(0, 19).replace("T", " "),
+      synInfo.UpdatedAt.toISOString().slice(0, 19).replace("T", " "),
+    );
+
+    console.log({importedProducts})
+    return synInfo;
   } catch (error) {
-    logger.error("error while fetching Sync info for store: " + shop);
+    logger.error("error while fetching Sync info for store: " + shop +"Error:"+error);
     throw new Error("error while fetching Sync info for store: " + shop);
   }
 }

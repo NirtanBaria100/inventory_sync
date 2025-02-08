@@ -36,7 +36,7 @@ export const worker = new Worker(
 
     //updates the status of job in the database to in-progress
     console.log("Saving sync info to database!🤔: "+job.data.shop);
-    await syncInfoUpdate(job.data.shop, syncStatus.Total, 0, jobStates.Inprogress,"");
+    await syncInfoUpdate(job.data.shop, syncStatus.Total, 0, jobStates.Inprogress);
     
 
     let productToImport = await productImportModel.findProductsFromImportLogs(

@@ -3,7 +3,7 @@
 client_id = "3e416bacdd36ded2b7c6a8faae1dc77c"
 name = "inventory-sync"
 handle = "inventory-sync-70"
-application_url = "https://reggae-dream-tight-l.trycloudflare.com"
+application_url = "https://forming-architects-assessing-caution.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "read_inventory,read_locations,read_products,write_inventory,write_prod
 
 [auth]
 redirect_urls = [
-  "https://reggae-dream-tight-l.trycloudflare.com/auth/callback",
-  "https://reggae-dream-tight-l.trycloudflare.com/auth/shopify/callback",
-  "https://reggae-dream-tight-l.trycloudflare.com/api/auth/callback"
+  "https://forming-architects-assessing-caution.trycloudflare.com/auth/callback",
+  "https://forming-architects-assessing-caution.trycloudflare.com/auth/shopify/callback",
+  "https://forming-architects-assessing-caution.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

@@ -2,6 +2,7 @@ import prisma from "../config/db.server.js";
 import logger from "../config/logger.js";
 
 class ImportedProductsLogsModel {
+
   static async UpdateStatus(
     value,
     product_id,
@@ -11,7 +12,7 @@ class ImportedProductsLogsModel {
   ) {
     try {
       let ProductReferences = [];
-      
+
       // let Logs = await prisma.importedProductLog.findFirst({
       //   where: { ProductId: product_id, ShopName: shop.ShopName },
       //   select: { ProductReferences: true },
@@ -33,7 +34,7 @@ class ImportedProductsLogsModel {
           ProductReferences: ProductReferences,
         },
       });
-      logger.info("Logs has been created for imported product!")
+      logger.info("Logs has been created for imported product!");
     } catch (error) {
       logger.info("Error while creating logs for imported products:".error);
       throw new Error(error);
@@ -48,9 +49,21 @@ class ImportedProductsLogsModel {
         },
         ShopName: shop,
       },
-      select: { ProductReferences: true,ProductId:true },
+      select: { ProductReferences: true, ProductId: true },
     });
   }
+
+  static async getImportedProductLogsDateWise(CreateAt, UpdatedAt) {
+    const fromDate = new Date(CreateAt);
+    const toDate = new Date(UpdatedAt); // Next second for range
+    
+    console.log({fromDate,toDate});
+    return await prisma.importedProductLog.findMany({
+      where: { ImportDate: { gte: fromDate, lte: toDate, } },
+    });
+  }
+
+
 }
 
 export default ImportedProductsLogsModel;

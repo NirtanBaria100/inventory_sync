@@ -48,14 +48,13 @@ class productImportModel {
           shop.shop,
           syncStatus.Total,
           syncStatus.Remaining + 1,
-          jobStates.Inprogress,
-          product.id
-        );
+          jobStates.Inprogress
+          );
 
 
 
         if (afterUpdate.Remaining == syncStatus.Total) {
-          await syncInfoUpdate(shop.shop, syncStatus.Total, syncStatus.Total, jobStates.Finish,"");
+          await syncInfoUpdate(shop.shop, syncStatus.Total, syncStatus.Total, jobStates.Finish);
         }
 
         logger.info(
