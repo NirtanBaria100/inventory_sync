@@ -1,5 +1,6 @@
 import {
   Badge,
+  Banner,
   BlockStack,
   Button,
   Card,
@@ -11,7 +12,7 @@ import {
   Text,
   TextField
 } from '@shopify/polaris';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react'; // Added useRef
 import { SearchIcon } from '@shopify/polaris-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { getbatchProducts } from '../components/product/helper/functions';
@@ -42,6 +43,9 @@ const Products = () => {
     State: ''
   });
 
+  // Use a ref to store the interval ID
+  const intervalRef = useRef(null);
+
   // Fetch vendor list and initial product data
   useEffect(() => {
     const fetchData = async () => {
@@ -62,14 +66,8 @@ const Products = () => {
       dispatch(setLoading(false));
     };
 
-    
     fetchData();
   }, []);
-
-
-  useEffect(()=>{
-    updateProgressBar();
-  },[])
 
   // Fetch sync progress data
   const updateProgressBar = useCallback(async () => {
@@ -86,7 +84,25 @@ const Products = () => {
           State: data.data.State
         });
       } else {
-        setIsSyncing(false);
+        // Synchronization is complete
+        setSyncInfo({
+          Total: data.data.Total,
+          Remaining: 0, // No remaining products
+          Percentage: 100, // 100% complete
+          State: jobStates.Finish
+        });
+        setTimeout(() => {
+          
+          setIsSyncing(false);
+        }, 3000);
+
+        shopify.toast.show("Products Imported!");
+
+        // Clear the interval
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
       }
     } else {
       setIsSyncing(false);
@@ -94,23 +110,28 @@ const Products = () => {
     }
   }, []);
 
+  // Polling for sync updates
+  useEffect(() => {
+    if (!isSyncing) return;
 
-  const clearSyncInfo = () => {
+
     setSyncInfo({
       Total: 0,
       Remaining: 0,
       Percentage: 0,
       State: ''
     });
-  }
-  // Polling for sync updates
-  useEffect(() => {
-    if (!isSyncing) return;
+    // Start the interval
+    intervalRef.current = setInterval(updateProgressBar, 3000);
 
+    // Cleanup function to clear the interval
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
 
-    clearSyncInfo();
-    const intervalId = setInterval(updateProgressBar, 3000);
-    return () => clearInterval(intervalId);
+        intervalRef.current = null;
+      }
+    };
   }, [isSyncing, updateProgressBar]);
 
   // Search handler
@@ -127,23 +148,26 @@ const Products = () => {
         <Text variant="headingXl" as="h4">Product Synchronization</Text>
         <Text variant='bodySm'>Synchronization will import products to your selected marketplace.</Text>
       </div>
+      <div style={{ marginBlock: "20px" }}>
+        <Divider borderColor="border-inverse" />
+      </div>
 
-      <div className='productSync-wrapper'>
-        <BlockStack gap="200">
-          <Divider borderColor="border-inverse" />
-          {isSyncing && (
-            <>
-              <strong>Status:
-                <Badge tone={syncInfo.State === jobStates.Inprogress ? 'info' : 'read-only'}>
-                  {syncInfo.State}
-                </Badge>
-              </strong>
+      {isSyncing && (
+        <div style={{ marginBlock: "20px" }}>
+          <Banner
+            title={<strong>Syncing Status: <Badge tone={syncInfo.State === jobStates.Inprogress ? 'info' : 'read-only'}>
+              {syncInfo.State}
+            </Badge></strong>}
+            tone="info"
+          >
+            <BlockStack gap={"200"}>
+              <Text variant='headingSm'>Importing Products to Marketplace</Text>
               <ProgressBar progress={syncInfo.Percentage} animated size='medium' />
               <span>Products Imported {syncInfo.Remaining}/{syncInfo.Total}</span>
-            </>
-          )}
-        </BlockStack>
-      </div>
+            </BlockStack>
+          </Banner>
+        </div>
+      )}
 
       <Card>
         <div style={{ marginBottom: "10px" }}>

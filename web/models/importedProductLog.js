@@ -1,8 +1,7 @@
 import prisma from "../config/db.server.js";
 import logger from "../config/logger.js";
-
+import { format } from 'date-fns';
 class ImportedProductsLogsModel {
-
   static async UpdateStatus(
     value,
     product_id,
@@ -52,18 +51,16 @@ class ImportedProductsLogsModel {
       select: { ProductReferences: true, ProductId: true },
     });
   }
-
   static async getImportedProductLogsDateWise(CreateAt, UpdatedAt) {
-    const fromDate = new Date(CreateAt);
-    const toDate = new Date(UpdatedAt); // Next second for range
-    
-    console.log({fromDate,toDate});
     return await prisma.importedProductLog.findMany({
-      where: { ImportDate: { gte: fromDate, lte: toDate, } },
+      where: {
+        ImportDate: {
+          gte: new Date(CreateAt).toISOString(), // Convert back to Date object
+          lte: new Date(UpdatedAt).toISOString(), // Convert back to Date object
+        },
+      },
     });
   }
-
-
 }
 
 export default ImportedProductsLogsModel;

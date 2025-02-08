@@ -78,4 +78,6 @@ model syncStatus {
   UpdatedAt DateTime
   State     String   @default("")
   CreateAt  DateTime @default(now())
+  mode     String   @default("")
 }
+

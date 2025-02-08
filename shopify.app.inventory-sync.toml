@@ -3,7 +3,7 @@
 client_id = "3e416bacdd36ded2b7c6a8faae1dc77c"
 name = "inventory-sync"
 handle = "inventory-sync-70"
-application_url = "https://forming-architects-assessing-caution.trycloudflare.com"
+application_url = "https://sucking-term-regulation-threatening.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "read_inventory,read_locations,read_products,write_inventory,write_prod
 
 [auth]
 redirect_urls = [
-  "https://forming-architects-assessing-caution.trycloudflare.com/auth/callback",
-  "https://forming-architects-assessing-caution.trycloudflare.com/auth/shopify/callback",
-  "https://forming-architects-assessing-caution.trycloudflare.com/api/auth/callback"
+  "https://sucking-term-regulation-threatening.trycloudflare.com/auth/callback",
+  "https://sucking-term-regulation-threatening.trycloudflare.com/auth/shopify/callback",
+  "https://sucking-term-regulation-threatening.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

@@ -240,7 +240,7 @@ class productController {
       let queue_response = "";
       try {
         //I am also managing the queue in database also
-        await syncInfoCreate(syncDetails, shop, jobStates.Inqueue);
+        await syncInfoCreate(syncDetails, shop, jobStates.Inqueue,'sync');
 
         //redis queue
         queue_response = await producerQueue({ shop, brandStoreId });
@@ -263,7 +263,10 @@ class productController {
       let productsIds = products.map((product) => product.id);
 
       try {
+         //I am also managing the queue in database also
+        await syncInfoCreate(syncDetails, shop, jobStates.Inqueue,'un-sync');
         await UnSyncProducerQueue({ productsIds, brandStoreId, shop });
+
       } catch (error) {
         logger.error(error.message);
       }

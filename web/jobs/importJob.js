@@ -22,7 +22,7 @@ export async function producerQueue(data) {
 
   await StoreInQueueInstance.add(QueueName, data);
 
-  return "Import job is added to queue for Brand " + data.shop;
+  return "Syncing in progress!";
 }
 
 export const worker = new Worker(
@@ -35,8 +35,8 @@ export const worker = new Worker(
 
 
     //updates the status of job in the database to in-progress
-    console.log("Saving sync info to database!🤔: "+job.data.shop);
-    await syncInfoUpdate(job.data.shop, syncStatus.Total, 0, jobStates.Inprogress);
+    logger.info("Saving sync info to database!🤔: "+job.data.shop);
+    await syncInfoUpdate(job.data.shop, syncStatus.Total, 0, jobStates.Inprogress,"un-sync");
     
 
     let productToImport = await productImportModel.findProductsFromImportLogs(
@@ -54,7 +54,7 @@ export const worker = new Worker(
     // let brandStoreName = job.data.shop;
     // Uncomment and fix the foreach logic
     for (const product of productsToImportFilter) {
-      await productImportModel.createProductToMarketPlace(product, job.data);
+      await productImportModel.createProductToMarketPla ce(product, job.data);
     }
   },
   { connection: redisConnection } // Fix connection configuration

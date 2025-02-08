@@ -2,7 +2,7 @@ import prisma from "../config/db.server.js";
 import logger from "../config/logger.js";
 import ImportedProductsLogsModel from "./importedProductLog.js";
 
-export async function syncInfoCreate(synDetails, shop, state) {
+export async function syncInfoCreate(synDetails, shop, state,mode) {
   console.log({ shop });
   try {
     await prisma.syncStatus.upsert({
@@ -13,17 +13,19 @@ export async function syncInfoCreate(synDetails, shop, state) {
         Remaining: 0,
         Total: synDetails.total,
         Shop: shop,
-        UpdatedAt: new Date(Date.now()), // Convert timestamp to a Date object
-        CreateAt: new Date(Date.now()),
+        UpdatedAt: new Date(Date.now()).toISOString(), // Convert timestamp to a Date object
+        CreateAt: new Date(Date.now()).toISOString(),
         State: state,
+        mode
       },
       update: {
         Remaining: 0,
         Total: synDetails.total,
         Shop: shop,
         State: state,
-        CreateAt: new Date(Date.now()),
-        UpdatedAt: new Date(Date.now()), // Convert timestamp to a Date object
+        UpdatedAt: new Date(Date.now()).toISOString(), // Convert timestamp to a Date object
+        CreateAt: new Date(Date.now()).toISOString(),
+        mode
       },
     });
     logger.info("Sync info created successfully.");
@@ -34,7 +36,7 @@ export async function syncInfoCreate(synDetails, shop, state) {
   }
 }
 
-export async function syncInfoUpdate(shop, total, remaining, state) {
+export async function syncInfoUpdate(shop, total, remaining, state,mode) {
   console.log({ shop });
   try {
     let updatedSyncStatus = await prisma.syncStatus.update({
@@ -45,7 +47,8 @@ export async function syncInfoUpdate(shop, total, remaining, state) {
         Remaining: remaining,
         Total: total,
         State: state,
-        UpdatedAt: new Date(Date.now()), // Convert timestamp to a Date object
+        UpdatedAt: new Date(Date.now()).toISOString(), // Convert timestamp to a Date object
+        mode
       },
     });
     logger.info("Sync info Updated successfully.");
@@ -64,6 +67,7 @@ export async function getRemaining(shop) {
       select: {
         Remaining: true,
         Total: true,
+        mode:true
       },
     });
     return syncStatus;
@@ -84,11 +88,12 @@ export async function getSyncInfo(shop) {
 
     let importedProducts = await ImportedProductsLogsModel.getImportedProductLogsDateWise(
        //Mysql doest not support camparision of date with millisecond
-      synInfo.CreateAt.toISOString().slice(0, 19).replace("T", " "),
-      synInfo.UpdatedAt.toISOString().slice(0, 19).replace("T", " "),
+      synInfo.CreateAt.toISOString(),
+      synInfo.UpdatedAt.toISOString(),
     );
 
     console.log({importedProducts})
+    
     return synInfo;
   } catch (error) {
     logger.error("error while fetching Sync info for store: " + shop +"Error:"+error);
