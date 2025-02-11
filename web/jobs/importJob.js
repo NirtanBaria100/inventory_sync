@@ -4,6 +4,8 @@ import productImportModel from "../models/productImportModel.js";
 import logger from "../config/logger.js";
 import { jobStates } from "../utils/jobStates.js";
 import { getRemaining, syncInfoUpdate } from "../models/syncInfoModel.js";
+import { jobMode } from "../frontend/utils/jobMode.js";
+import { getColumns } from "../models/ColumnSelection.js";
 
 const QueueName = "Stores-Inqueue-products";
 
@@ -28,16 +30,22 @@ export async function producerQueue(data) {
 export const worker = new Worker(
   QueueName,
   async (job) => {
-    const { products, marketplaces } = job.data; // Access job.data
+    const { products, marketplaces,shop } = job.data; // Access job.data
     logger.info(`Processing job: ${job.id}`);
     logger.info("Data: " + JSON.stringify({ job: job.data }));
     let syncStatus = await getRemaining(job.data.shop);
 
-
     //updates the status of job in the database to in-progress
-    logger.info("Saving sync info to database!🤔: "+job.data.shop);
-    await syncInfoUpdate(job.data.shop, syncStatus.Total, 0, jobStates.Inprogress,"un-sync");
-    
+    logger.info("Saving sync info to database!🤔: " + job.data.shop);
+    await syncInfoUpdate(
+      job.data.shop,
+      syncStatus.Total,
+      0,
+      jobStates.Inprogress,
+      jobMode.sync,
+      0,
+      0
+    );
 
     let productToImport = await productImportModel.findProductsFromImportLogs(
       job.data.shop
@@ -51,10 +59,12 @@ export const worker = new Worker(
       "Filtered Products to be import count: " + productsToImportFilter.length
     );
 
+    let getColumnsToBeSync = await getColumns(shop);
+
     // let brandStoreName = job.data.shop;
     // Uncomment and fix the foreach logic
     for (const product of productsToImportFilter) {
-      await productImportModel.createProductToMarketPla ce(product, job.data);
+      await productImportModel.createProductToMarketPlace(product, job.data,getColumnsToBeSync);
     }
   },
   { connection: redisConnection } // Fix connection configuration

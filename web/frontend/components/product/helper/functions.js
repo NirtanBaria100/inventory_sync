@@ -196,7 +196,7 @@ export const handleUnSyncProducts = async (
   const filteredProducts = products.filter((item) =>
     selectedResources.includes(item.id)
   );
-  console.log(filteredProducts);
+
 
   // Filter products that are  synced
   const SyncedProducts = filteredProducts.filter((x) => x.status);
@@ -231,7 +231,7 @@ export const handleUnSyncProducts = async (
         })
       );
       shopify.toast.show(
-        result.message || "Products successfully desyncronized!"
+        result.message || "Un-syncing in progress!"
       );
     } else {
       // Handle error response
@@ -241,7 +241,5 @@ export const handleUnSyncProducts = async (
     }
   } catch (error) {
     shopify.toast.show("Error while desyncronize");
-  } finally {
-    setIsSyncing(false); // Ensure the loader is stopped
-  }
+  } 
 };

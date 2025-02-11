@@ -10,16 +10,18 @@ import ImportedProductsLogsModel from "./importedProductLog.js";
 import { getRemaining, syncInfoUpdate } from "./syncInfoModel.js";
 import { SHOULD_AUTOBATCH } from "@reduxjs/toolkit";
 import { jobStates } from "../utils/jobStates.js";
+import { jobMode } from "../frontend/utils/jobMode.js";
 
 class productImportModel {
   static async importProductToMarketPlace(
     product,
     shop,
-    MarketPlaceStoreSession
+    MarketPlaceStoreSession,
+    getColumnsToBeSync
   ) {
+
     //Create product on marketplace.
     try {
-
       let createdProduct = await ProductModel.CreateProduct(
         MarketPlaceStoreSession,
         product,
@@ -41,68 +43,37 @@ class productImportModel {
           shop
         );
 
-        
         let syncStatus = await getRemaining(shop);
 
         let afterUpdate = await syncInfoUpdate(
           shop.shop,
           syncStatus.Total,
           syncStatus.Remaining + 1,
-          jobStates.Inprogress
-          );
-
-
+          jobStates.Inprogress,
+          jobMode.sync,
+          0,
+          0
+        );
 
         if (afterUpdate.Remaining == syncStatus.Total) {
-          await syncInfoUpdate(shop.shop, syncStatus.Total, syncStatus.Total, jobStates.Finish);
+          await syncInfoUpdate(
+            shop.shop,
+            syncStatus.Total,
+            syncStatus.Total,
+            jobStates.Finish,
+            jobMode.sync,
+            0,
+            0
+          );
         }
 
         logger.info(
           "Product sync status updated at ImportedProductsLogs table in database Product id:" +
             product.id
         );
-
       } catch (error) {
-        logger.error("Error while creating products:",error);
+        logger.error("Error while creating products:", error);
       }
-
-      //Creates tags for the product
-      //I have decided to add tags seperatly using addTags api because If a included tags in the product create api so it will
-      //overwrite the existing tags which is not required.
-      // try {
-      //   let AddTags = await ProductModel.CreateTags(
-      //     MarketPlaceStoreSession,
-      //     createdProduct,
-      //     shop
-      //   );
-
-      //   if (AddTags) {
-      //     logger.info(
-      //       "Product tags has been created for Product:" + createdProduct.id
-      //     );
-      //   }
-      // } catch (error) {
-      //   logger.error(error);
-      // }
-
-      // //Creates variants for the product
-      // try {
-      //   let AddVariants = await ProductModel.CreateVariants(
-      //     MarketPlaceStoreSession,
-      //     createdProduct,
-      //     product,
-      //     shop
-      //   );
-
-      //   if (AddVariants) {
-      //     logger.info(
-      //       "Product variants has been created for Product:" + createdProduct.id
-      //     );
-      //   }
-
-      // } catch (error) {
-      //   logger.error(error);
-      // }
     } catch (error) {
       let errorMessage =
         "Error while importing Product to marketPlace: " + error.message;
@@ -135,25 +106,7 @@ class productImportModel {
     }
   }
 
-  static async createProductToMarketPlace(product, shop) {
-    // Check if the product exists in Marketplace by 'tag' metafield
-    // const existingProduct = await checkIfProductAlreadyExistOnMarketPlace(shop);
-    // console.log({ existingProduct });
-
-    // if (existingProduct) {
-    // If product exists, update it
-    // console.log(`Updating product with WooCommerce ID: ${product.id}`);
-    // await updateProductInShopify(
-    //   existingProduct,
-    //   product,
-    //   admin,
-    //   collectionId,
-    //   session
-    // );
-    // } else {
-    //   // If product does not exist, create it
-    //   console.log(`Importing new product with WooCommerce ID: ${product.id}`);
-
+  static async createProductToMarketPlace(product, shop,getColumnsToBeSync) {
     try {
       //find connected marketplace with the brand store
       let connectedStores = await findConnectedDestinationStores(
@@ -198,7 +151,8 @@ class productImportModel {
       await this.importProductToMarketPlace(
         productDetails,
         shop,
-        MarketPlaceStoreSession
+        MarketPlaceStoreSession,
+        getColumnsToBeSync
       );
     } catch (error) {
       logger.error(error.message);
@@ -418,6 +372,17 @@ class productImportModel {
       ];
 
       const marketPlaces = uniqueMarketplaces;
+      let syncStatus = await getRemaining(shop);
+
+      await syncInfoUpdate(
+        shop,
+        syncStatus.Total,
+        0,
+        jobStates.Inprogress,
+        jobMode.unSync,
+        marketPlaces.length,
+        0
+      );
 
       for (const marketPlace of marketPlaces) {
         //fetch products for this marketplace
@@ -430,7 +395,58 @@ class productImportModel {
           (product) => ({ refId: product.refId, id: product.Id })
         );
 
-        await ProductModel.deleteProductsBulk(mapFilteredProducts, marketPlace);
+        await ProductModel.deleteProductsBulk(mapFilteredProducts, marketPlace,shop);
+
+        //Update the sync Status of imported product to datbase
+        console.log(
+          "Products to be deleting from database logs:",
+          mapFilteredProducts.map((product) => product.id)
+        );
+
+        try {
+          for (const id of mapFilteredProducts.map((product) => product.id)) {
+            
+            try {
+              await ImportedProductsLogsModel.deleteMany(id, shop);
+            } catch (error) {
+              logger.error(
+                `Error while deleting logs from database:${error.message}`
+              );
+          
+              continue;
+            }
+          }
+        } catch (error) {
+          logger.error("Error while creating products:", error);
+        }
+
+        let syncStatus = await getRemaining(shop);
+
+
+        let afterUpdate = await syncInfoUpdate(
+          shop,
+          syncStatus.Total,
+          syncStatus.Remaining,
+          jobStates.Inprogress,
+          jobMode.unSync,
+          syncStatus.TotalMarketPlaces,
+          syncStatus.RemainingMarketPlaces + 1
+        );
+
+        if (
+          afterUpdate.Remaining == syncStatus.Total &&
+          afterUpdate.RemainingMarketPlaces == afterUpdate.TotalMarketPlaces
+        ) {
+          await syncInfoUpdate(
+            shop,
+            syncStatus.Total,
+            syncStatus.Total,
+            jobStates.Finish,
+            jobMode.unSync,
+            afterUpdate.TotalMarketPlaces,
+            afterUpdate.TotalMarketPlaces
+          );
+        }
       }
     } catch (error) {
       console.log(error);

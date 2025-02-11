@@ -7,6 +7,9 @@ import {
 } from "../graphql/mutations.js";
 import LocationModel from "./locationModel.js";
 import prisma from "../config/db.server.js";
+import { getRemaining, syncInfoUpdate } from "./syncInfoModel.js";
+import { jobMode } from "../frontend/utils/jobMode.js";
+import { jobStates } from "../utils/jobStates.js";
 
 class ProductModel {
   static async CreateProduct(MarketPlaceStoreSession, product, shop) {
@@ -15,69 +18,136 @@ class ProductModel {
         MarketPlaceStoreSession
       );
 
-      // Shopify GraphQL endpoint
-      const shopifyEndpoint = `https://${MarketPlaceStoreSession.shop}/admin/api/${process.env.SHOPIFY_API_VERSION}/graphql.json`;
-      const appName = process.env.APP_NAME;
-
-      // Shopify GraphQL mutation for creating a product
-      const mutation = productsetMutation;
-
-      let productOptionsMap = product.options.map((option) => ({
-        name: option.name,
-        values: option.optionValues?.map((optionvalue) => ({
-          name: optionvalue.name,
-        })),
-      }));
-
-      // Map all the images from the product
-      let productMediaMap = product?.media?.edges.map((edge) => {
-        let preview = edge?.node?.preview;
-        let mediaContentType = edge?.node?.mediaContentType;
-        return {
-          originalSource: preview?.image?.url,
-          alt: preview?.image?.altText,
-          contentType: mediaContentType,
-        };
+      // Fetch column settings for the shop
+      const columnSettings = await prisma.columnSelection.findUnique({
+        where: { shop: shop.shop },
       });
 
-      let variants = product?.variants?.nodes.map((node) => ({
-        price: node.price,
-        compareAtPrice: node.compareAtPrice,
-        optionValues: node.selectedOptions.map((selectedOption) => ({
-          optionName: selectedOption.name, // Option name
-          name: selectedOption.value, // Option value
-        })),
-        inventoryItem: {
-          tracked: node?.inventoryItem?.tracked || false,
-        },
-        inventoryQuantities:
-          node?.inventoryItem?.inventoryLevels?.edges.flatMap((edge) =>
-            edge.node.quantities
-              .filter((quantity) => quantity.name == "available")
-              .map((quantity) => ({
-                locationId: location?.id,
-                name: quantity?.name,
-                quantity: quantity?.quantity,
-              }))
-          ),
-      }));
+      if (!columnSettings) {
+        throw new Error("No column settings found for this shop.");
+      }
 
-      // Map product fields to Shopify's product schema
-      const variables = {
-        productSet: {
-          title: product.title,
-          descriptionHtml: product.descriptionHtml,
-          productOptions: productOptionsMap,
-          files: productMediaMap,
-          tags: [shop.shop, appName],
-          variants,
-          metafields: [
+      const enabledColumns = columnSettings; // Assuming `data` contains the boolean field selections
+
+      const shopifyEndpoint = `https://${MarketPlaceStoreSession.shop}/admin/api/${process.env.SHOPIFY_API_VERSION}/graphql.json`;
+      const appName = process.env.APP_NAME;
+      const mutation = productsetMutation;
+
+      // Conditionally map product options
+      let productOptionsMap = enabledColumns.Options
+        ? product.options.map((option) => ({
+            name: option.name,
+            values: option.optionValues?.map((optionvalue) => ({
+              name: optionvalue.name,
+            })),
+          }))
+        : [];
+
+      // Conditionally map media
+      let productMediaMap = enabledColumns.Images
+        ? product?.media?.edges.map((edge) => {
+            let preview = edge?.node?.preview;
+            let mediaContentType = edge?.node?.mediaContentType;
+            return {
+              originalSource: preview?.image?.url,
+              alt: preview?.image?.altText,
+              contentType: mediaContentType,
+            };
+          })
+        : [];
+
+      // Conditionally map variants
+      let variants = enabledColumns.Variants
+        ? product?.variants?.nodes.map((node) => ({
+            price: enabledColumns.Price ? node.price : undefined,
+            sku: enabledColumns.SKU ? node.sku : undefined,
+            barcode: enabledColumns.Barcode ? node.barcode : undefined,
+            tracked: enabledColumns.TrackInventory ? node.tracked : undefined,
+            countryCodeOfOrigin: enabledColumns.CountryRegion
+              ? node.countryCodeOfOrigin
+              : undefined,
+            countryHarmonizedSystemCodes: enabledColumns.HSCode
+              ? node.countryHarmonizedSystemCodes
+              : undefined,
+            unitCost: enabledColumns.CostPerItem ? node.unitCost : undefined,
+            position: enabledColumns.Position ? node.position : undefined,
+            taxable: enabledColumns.Taxable ? node.taxable : undefined,
+            compareAtPrice: enabledColumns.CompareAtPrice
+              ? node.compareAtPrice
+              : undefined,
+            optionValues: enabledColumns.Options
+              ? node.selectedOptions.map((selectedOption) => ({
+                  optionName: selectedOption.name, // Option name
+                  name: selectedOption.value, // Option value
+                }))
+              : [],
+            inventoryItem: enabledColumns.TrackInventory
+              ? {
+                  measurement: {
+                    weight: {
+                      unit: enabledColumns.WeightUnit
+                        ? node?.inventoryItem?.measurement?.weight?.unit
+                        : undefined,
+                      value: enabledColumns.Weight
+                        ? node?.inventoryItem?.measurement?.weight?.value
+                        : undefined,
+                    },
+                  },
+                  tracked: enabledColumns.TrackInventory
+                    ? node?.inventoryItem?.tracked
+                    : undefined || false,
+                  countryCodeOfOrigin: enabledColumns.CountryRegion
+                    ? node?.countryCodeOfOrigin
+                    : undefined,
+                  countryHarmonizedSystemCodes: enabledColumns.HSCode
+                    ? node?.countryHarmonizedSystemCodes
+                    : undefined,
+                  unitCost: enabledColumns?.CostPerItem
+                    ? node?.unitCost
+                    : undefined,
+                }
+              : {},
+            inventoryQuantities:
+              enabledColumns.InventoryLevel && location
+                ? node?.inventoryItem?.inventoryLevels?.edges.flatMap((edge) =>
+                    edge.node.quantities
+                      .filter((quantity) => quantity.name == "available")
+                      .map((quantity) => ({
+                        locationId: location?.id,
+                        name: quantity?.name,
+                        quantity: quantity?.quantity,
+                      }))
+                  )
+                : [],
+          }))
+        : [];
+
+      // Conditionally add metafields
+      let metafields = enabledColumns.Metafields
+        ? [
             {
               key: "reference_id",
               value: product.id,
               type: "single_line_text_field",
             },
-          ],
+          ]
+        : [];
+
+      // Map product fields dynamically based on enabled columns
+      const variables = {
+        productSet: {
+          ...(enabledColumns.Title
+            ? { title: product.title }
+            : { title: "Default Title" }),
+          ...(enabledColumns.Description && {
+            descriptionHtml: product.descriptionHtml,
+          }),
+          ...(enabledColumns.Options && { productOptions: productOptionsMap }),
+          ...(enabledColumns.Images && { files: productMediaMap }),
+          tags: [shop.shop, appName],
+          ...(enabledColumns.Variants && { variants }),
+          ...(enabledColumns.Metafields && { metafields }),
+          vendor: enabledColumns.Vendor ? product?.vendor : undefined,
         },
       };
 
@@ -271,7 +341,7 @@ class ProductModel {
     }
   }
 
-  static async deleteProductsBulk(products, marketPlace) {
+  static async deleteProductsBulk(products, marketPlace, shop) {
     const shopifyEndpoint = `https://${marketPlace.marketPlace}/admin/api/${process.env.SHOPIFY_API_VERSION}/graphql.json`;
 
     const mutation = `
@@ -329,9 +399,20 @@ class ProductModel {
               Status: false,
             },
           });
-
         }
-        console.log(`Product Deleted: ${productDelete.deletedProductId}`);
+
+        logger.info(`Product Deleted: ${productDelete.deletedProductId}`);
+
+        let syncStatus = await getRemaining(shop);
+        await syncInfoUpdate(
+          shop,
+          syncStatus.Total,
+          syncStatus.Remaining + 1,
+          jobStates.Inprogress,
+          jobMode.unSync,
+          syncStatus.TotalMarketPlaces,
+          syncStatus.RemainingMarketPlaces
+        );
       } catch (error) {
         console.error(
           `Failed to delete product ${product.refId}: ${error.message}`

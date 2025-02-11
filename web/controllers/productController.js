@@ -10,8 +10,11 @@ import { producerQueue } from "../jobs/importJob.js";
 import { UnSyncProducerQueue } from "../jobs/ProdcutUnsyncJob.js";
 import { getSyncInfo, syncInfoCreate } from "../models/syncInfoModel.js";
 import { jobStates } from "../utils/jobStates.js";
-
+import { jobMode } from "../frontend/utils/jobMode.js";
+import { getColumns, saveColmns } from "../models/ColumnSelection.js";
+import shopify from "../shopify.js"
 class productController {
+
   static async getProductBatch(req, res) {
     try {
       const { accessToken, shop } = res.locals.shopify.session;
@@ -19,7 +22,7 @@ class productController {
 
       const { searchQuery, FilterCriteria, endCursor, startCursor, event } =
         req.body;
-
+        
       // const allProducts = [];
       let limit = 250;
 
@@ -81,6 +84,7 @@ class productController {
 
       const allProducts = await Promise.all(
         data.edges.map(async ({ node }) => {
+          // find product from shopify and filter it from db data
           const IsExistAlready =
             await productImportModel.findProductFromImportLogs(shop, node.id);
 
@@ -240,7 +244,14 @@ class productController {
       let queue_response = "";
       try {
         //I am also managing the queue in database also
-        await syncInfoCreate(syncDetails, shop, jobStates.Inqueue,'sync');
+        await syncInfoCreate(
+          syncDetails,
+          shop,
+          jobStates.Inqueue,
+          "sync",
+          0,
+          0
+        );
 
         //redis queue
         queue_response = await producerQueue({ shop, brandStoreId });
@@ -253,7 +264,6 @@ class productController {
       return res.status(500).json({ message: error.message });
     }
   }
-
   static async unsyn_process_initialize(req, res) {
     try {
       const { shop } = res.locals.shopify.session;
@@ -263,10 +273,20 @@ class productController {
       let productsIds = products.map((product) => product.id);
 
       try {
-         //I am also managing the queue in database also
-        await syncInfoCreate(syncDetails, shop, jobStates.Inqueue,'un-sync');
-        await UnSyncProducerQueue({ productsIds, brandStoreId, shop });
+        let syncDetails = {
+          total: products.length,
+        };
+        //I am also managing the queue in database also
+        await syncInfoCreate(
+          syncDetails,
+          shop,
+          jobStates.Inqueue,
+          jobMode.unSync,
+          0,
+          0
+        );
 
+        await UnSyncProducerQueue({ productsIds, brandStoreId, shop });
       } catch (error) {
         logger.error(error.message);
       }
@@ -274,7 +294,6 @@ class productController {
 
     return res.status(200).json("unsync process initialized ! 😂");
   }
-
   static async CheckSyncInfo(req, res) {
     try {
       let { shop } = res.locals.shopify.session;
@@ -289,6 +308,41 @@ class productController {
         .json({ data: [], message: "Internal server error!" });
     }
   }
+  static async saveColmns(req, res) {
+    try {
+      let { shop } = res.locals.shopify.session;
+      let body = req.body;
+
+      logger.info(`Saving columns for shop: ${shop}`);
+      logger.info(JSON.stringify(body));
+
+      await saveColmns(shop, body);
+
+      return res.status(200).json({ data: body, message: "Columns saved!" });
+    } catch (error) {
+      logger.error("Error saving columns:", error);
+      return res.status(500).json({ message: "Failed to save columns!" });
+    }
+  }
+  static async getColmns(req, res) {
+    try {
+      let { shop } = res.locals.shopify.session;
+
+      // Fetch the saved column selections from the database
+      const columns = await getColumns(shop);
+      if (!columns) {
+        return res
+          .status(404)
+          .json({ message: "Internal server error!", columns: {} });
+      }
+
+      return res.status(200).json({ columns: columns });
+    } catch (error) {
+      logger.error(`Error fetching column selections:, ${error}`);
+      return res.status(500).json({ message: "Internal server error!" });
+    }
+  }
+  
 }
 
 export default productController;

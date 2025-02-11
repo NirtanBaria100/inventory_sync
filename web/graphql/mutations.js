@@ -37,6 +37,8 @@ export const productCreateMutation = `
                         id
                         sku
                         price
+                        barcode
+                        
                       }
                     }
                   }

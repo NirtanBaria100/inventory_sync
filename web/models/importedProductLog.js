@@ -1,6 +1,5 @@
 import prisma from "../config/db.server.js";
 import logger from "../config/logger.js";
-import { format } from 'date-fns';
 class ImportedProductsLogsModel {
   static async UpdateStatus(
     value,
@@ -58,6 +57,15 @@ class ImportedProductsLogsModel {
           gte: new Date(CreateAt).toISOString(), // Convert back to Date object
           lte: new Date(UpdatedAt).toISOString(), // Convert back to Date object
         },
+      },
+    });
+  }
+
+  static async deleteMany(id, brand) {
+    await prisma.importedProductLog.delete({
+      where: {
+        ProductId: id,
+        ShopName: brand,
       },
     });
   }

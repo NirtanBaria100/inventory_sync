@@ -12,6 +12,8 @@ router.post(
   productController.Import_initialize
 );
 router.get('/sync-info',checkConnectionMiddleware,productController.CheckSyncInfo)
+router.post('/save-columns',checkConnectionMiddleware,productController.saveColmns)
+router.get('/get-columns',checkConnectionMiddleware,productController.getColmns)
 router.post(
   "/unsync",
   checkConnectionMiddleware,

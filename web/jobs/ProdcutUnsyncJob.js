@@ -2,6 +2,9 @@ import logger from "../config/logger.js";
 import { Queue, Worker } from "bullmq";
 import { defaultQueueConfig, redisConnection } from "../config/bullMq.js";
 import productImportModel from "../models/productImportModel.js";
+import { getRemaining, syncInfoUpdate } from "../models/syncInfoModel.js";
+import { jobStates } from "../utils/jobStates.js";
+import { jobMode } from "../frontend/utils/jobMode.js";
 
 const QueueName = "Stores-Inqueue-products-unsync";
 
@@ -29,32 +32,23 @@ export const worker = new Worker(
       );
     }
     const { products, marketplaces } = job.data; // Access job.data
+
+    
     logger.info(`Processing job: ${job.id}`);
     logger.info("Data: " + JSON.stringify({ job: job.data }));
 
+  
+
+    //updates the status of job in the database to in-progress
+    logger.info("Saving un-sync info to database!🤔: "+job.data.shop);
+ 
+    
     await productImportModel.deleteProductToMarketPlace(
       job.data.productsIds,
       job.data.shop,
       marketplaces
     );
 
-    // let productToImport = await productImportModel.findProductsFromImportLogs(
-    //   job.data.shop
-    // );
-
-    // let productsToImportFilter = productToImport.data.filter(
-    //   (x) => x.Status == false
-    // );
-
-    // logger.info(
-    //   "Filtered Products to be import count: " + productsToImportFilter.length)
-    // ;
-
-    // // let brandStoreName = job.data.shop;
-    // // Uncomment and fix the foreach logic
-    // for (const product of productsToImportFilter) {
-    //   await productImportModel.createProductToMarketPlace(product, job.data);
-    // }
   },
   { connection: redisConnection } // Fix connection configuration
 );

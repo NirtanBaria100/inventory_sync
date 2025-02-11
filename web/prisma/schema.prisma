@@ -72,12 +72,81 @@ model ImportedProductLog {
 }
 
 model syncStatus {
-  Shop      String   @id
-  Total     Int
-  Remaining Int
-  UpdatedAt DateTime
-  State     String   @default("")
-  CreateAt  DateTime @default(now())
-  mode     String   @default("")
+  Shop                  String   @id
+  Total                 Int
+  Remaining             Int
+  UpdatedAt             DateTime
+  State                 String   @default("")
+  CreateAt              DateTime @default(now())
+  mode                  String   @default("")
+  TotalMarketPlaces     Int      @default(0)
+  RemainingMarketPlaces Int      @default(0)
 }
 
+// model ColumnSelection {
+//   id                  Int     @id
+//   Title               Boolean
+//   Description         Boolean
+//   Vendor             Boolean
+//   Tags               Boolean
+//   CustomType         Boolean
+//   Images             Boolean
+//   Videos             Boolean
+//   ThemeTemplate      Boolean
+//   Status             Boolean
+//   PublishedOnStore   Boolean
+//   Variants           Boolean
+//   VariantDeletion    Boolean
+//   Metafields         Boolean
+//   Publications       Boolean
+//   Category           Boolean
+//   InventoryLevel     Boolean
+//   Price              Boolean
+//   CompareAtPrice     Boolean
+//   CostPerItem        Boolean
+//   HSCode             Boolean
+//   CountryRegion      Boolean
+//   TrackInventory     Boolean
+//   InventoryPolicy    Boolean
+//   Weight             Boolean
+//   WeightUnit         Boolean
+//   Taxable            Boolean
+//   Position           Boolean
+//   Options            Boolean
+//   SKU               Boolean
+//   Barcode           Boolean
+// }
+
+model ColumnSelection {
+  shop             String  @id
+  Title            Boolean 
+  Description      Boolean
+  Vendor           Boolean
+  Tags             Boolean
+  CustomType       Boolean
+  Images           Boolean
+  //Videos             Boolean
+  ThemeTemplate    Boolean
+  Status           Boolean
+  PublishedOnStore Boolean
+  Variants         Boolean
+  VariantDeletion  Boolean
+  Metafields       Boolean
+  //Publications       Boolean
+  Category         Boolean
+  InventoryLevel   Boolean
+  Price            Boolean
+  CompareAtPrice   Boolean
+  CostPerItem      Boolean
+  HSCode           Boolean
+  CountryRegion    Boolean
+  TrackInventory   Boolean
+  InventoryPolicy  Boolean
+  Weight           Boolean
+  WeightUnit       Boolean
+  Taxable          Boolean
+  Position         Boolean
+  Options          Boolean
+  SKU              Boolean
+  Barcode          Boolean
+}

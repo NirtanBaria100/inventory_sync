@@ -75,9 +75,15 @@ query GetProduct($id: ID!) {
   product(id: $id) {
     id
     title
+    category{
+      fullName
+    }
+    status
+    tags
+    customProductType
     vendor
     descriptionHtml
-    media(first:250){
+    media(first:10){
       edges{
         node{
           mediaContentType
@@ -111,20 +117,40 @@ query GetProduct($id: ID!) {
       
       
     }
-    variants(first: 10) {
+    variants(first: 250) {
       nodes {
         id
         title
         price
         sku
+        barcode
         compareAtPrice
         inventoryQuantity
         selectedOptions{
           name
           value
         }
-        	inventoryItem{
-            tracked
+        inventoryItem{
+          measurement{
+            weight{
+              unit
+              value
+            }
+          }
+          tracked
+          countryCodeOfOrigin
+          countryHarmonizedSystemCodes(first:10){
+            edges{
+              node{
+                countryCode
+                harmonizedSystemCode
+              }
+            }
+          }
+            unitCost{
+              amount
+              currencyCode
+            }
             inventoryLevels(first: 4) {
                      edges {
                        node {
@@ -140,10 +166,23 @@ query GetProduct($id: ID!) {
                      }
                    }
         }
+        inventoryPolicy
+        metafields(first:4){
+          edges{
+            node{
+              key
+              value
+            }
+          }
+        }
+        position
+        sku
+        taxable
         
       }
     }
-    collections(first: 10) {
+    vendor
+    collections(first: 20) {
       nodes {
         id
         title
