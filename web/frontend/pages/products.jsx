@@ -31,7 +31,7 @@ import {
   setStartCursor,
   setEndCursor
 } from '../features/productSlice';
-import FiltersOptions from '../components/product/filtersOptions';
+import FiltersOptions from '../components/product/FiltersOptions';
 import Table from '../components/product/Table';
 import { jobStates } from '../utils/jobStates';
 import '../assets/css/productPage.css';
