@@ -4,7 +4,7 @@ import { findConnectedDestinationStores } from "./connectionModel.js";
 import { GetSessionByShopName } from "./dbSessionModel.js";
 import axios from "axios";
 import ProductModel from "./productModel.js";
-import ImportedProductErrorLog from "./ImportedProductErrorLog.js";
+import ImportedProductErrorLog from "./importedProductErrorLog.js";
 import { getProductQuery } from "../graphql/queries.js";
 import ImportedProductsLogsModel from "./importedProductLog.js";
 import { getRemaining, syncInfoUpdate } from "./syncInfoModel.js";
