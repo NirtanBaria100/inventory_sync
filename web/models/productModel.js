@@ -2,17 +2,24 @@ import axios from "axios";
 import logger from "../config/logger.js";
 import {
   addTagsMutation,
-  productCreateMutation,
   productsetMutation,
+  publishUpdateMutation,
 } from "../graphql/mutations.js";
 import LocationModel from "./locationModel.js";
 import prisma from "../config/db.server.js";
 import { getRemaining, syncInfoUpdate } from "./syncInfoModel.js";
 import { jobMode } from "../frontend/utils/jobMode.js";
 import { jobStates } from "../utils/jobStates.js";
+import shopify from "../shopify.js";
+import { getSalesChannelsQuery } from "../graphql/queries.js";
 
 class ProductModel {
-  static async CreateProduct(MarketPlaceStoreSession, product, shop) {
+  static async CreateProduct(
+    MarketPlaceStoreSession,
+    product,
+    shop,
+    id = null
+  ) {
     try {
       const location = await LocationModel.getStoreLocation(
         MarketPlaceStoreSession
@@ -20,7 +27,7 @@ class ProductModel {
 
       // Fetch column settings for the shop
       const columnSettings = await prisma.columnSelection.findUnique({
-        where: { shop: shop.shop },
+        where: { shop: shop },
       });
 
       if (!columnSettings) {
@@ -121,20 +128,35 @@ class ProductModel {
                 : [],
           }))
         : [];
-
       // Conditionally add metafields
-      let metafields = enabledColumns.Metafields
-        ? [
-            {
-              key: "reference_id",
-              value: product.id,
-              type: "single_line_text_field",
-            },
-          ]
-        : [];
+      let metafields =
+        enabledColumns.Metafields && product.metafields?.edges
+          ? [
+              {
+                namespace: "custom",
+                key: "reference_id",
+                value: product.id,
+                type: "single_line_text_field",
+              },
+              ...product.metafields.edges.map((edge) => ({
+                namespace: "custom",
+                key: edge?.node?.key || "unknown_key", // Fallback in case key is missing
+                value: edge?.node?.value || "", // Fallback to empty string if value is missing
+                type: edge?.node?.type || "single_line_text_field", // Default type
+              })),
+            ]
+          : [
+              {
+                key: "reference_id",
+                value: product.id,
+                type: "single_line_text_field",
+              },
+            ];
+
+      let UpdatedTags = enabledColumns.Tags ? product.tags : [];
 
       // Map product fields dynamically based on enabled columns
-      const variables = {
+      let variables = {
         productSet: {
           ...(enabledColumns.Title
             ? { title: product.title }
@@ -144,12 +166,22 @@ class ProductModel {
           }),
           ...(enabledColumns.Options && { productOptions: productOptionsMap }),
           ...(enabledColumns.Images && { files: productMediaMap }),
-          tags: [shop.shop, appName],
+          tags: [shop, appName, ...UpdatedTags],
           ...(enabledColumns.Variants && { variants }),
           ...(enabledColumns.Metafields && { metafields }),
+
           vendor: enabledColumns.Vendor ? product?.vendor : undefined,
+          category: enabledColumns.Category ? product?.category.id : undefined,
+          productType: enabledColumns.CustomType
+            ? product?.productType
+            : undefined,
         },
       };
+
+      //condition is added product payload is from webhook
+      if (id !== null) {
+        variables.productSet.id = id;
+      }
 
       // Make the API request using fetch
       const response = await fetch(shopifyEndpoint, {
@@ -190,6 +222,33 @@ class ProductModel {
             .join(", ")}`
         );
       }
+
+      //check if the user disble the product auto publish function
+      if (!enabledColumns.PublishedOnStore) {
+        //extract active sales channels from market place
+        let channels = await this.fetchActiveSalesChannels(
+          MarketPlaceStoreSession
+        );
+
+        if (channels.success) {
+          //publish product on all active channels
+          for (const channel of channels.salesChannels) {
+            let isPublish = await this.publishOnMarketplace(
+              productData.product.id,
+              channel.id,
+              MarketPlaceStoreSession,
+              "unPublish"
+            );
+
+            if (isPublish.success) {
+              logger.info(isPublish.message);
+            } else {
+              logger.info(isPublish.message);
+            }
+          }
+        }
+      }
+
 
       // Return the created product details
       return productData.product;
@@ -418,6 +477,110 @@ class ProductModel {
           `Failed to delete product ${product.refId}: ${error.message}`
         );
       }
+    }
+  }
+
+  static async publishOnMarketplace(
+    productId,
+    channelId,
+    MarketPlaceStoreSession,
+    mode
+  ) {
+    try {
+      const client = new shopify.api.clients.Graphql({
+        session: MarketPlaceStoreSession,
+      });
+
+      // Shopify GraphQL mutation for updating the publication
+      const mutation = publishUpdateMutation;
+
+      let input = {
+        autoPublish: true,
+      };
+      if (mode == "unPublish") {
+        input.publishablesToRemove = [`${productId}`];
+      } else {
+        input.publishablesToAdd = [`${productId}`];
+      }
+      // GraphQL variables
+      const variables = {
+        id: channelId, // Sales Channel ID
+        input,
+      };
+
+      // Execute the mutation
+      const response = await client.query({
+        data: { query: mutation, variables },
+      });
+
+      // Check for errors in response
+      if (response.body.errors) {
+        throw new Error(
+          `GraphQL errors: ${response.body.errors
+            .map((e) => e.message)
+            .join(", ")}`
+        );
+      }
+
+      const result = response.body.data.publicationUpdate;
+
+      // Check for user errors
+      if (result.userErrors.length > 0) {
+        throw new Error(
+          `User errors: ${result.userErrors.map((e) => e.message).join(", ")}`
+        );
+      }
+
+      return {
+        success: true,
+        message: "Product published successfully",
+        publicationId: result.publication.id,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: "Failed to publish product: " + error.message,
+      };
+    }
+  }
+
+  static async fetchActiveSalesChannels(MarketPlaceStoreSession) {
+    try {
+      const client = new shopify.api.clients.Graphql({
+        session: MarketPlaceStoreSession,
+      });
+
+      // Shopify GraphQL query to get all active sales channels
+      const query = getSalesChannelsQuery;
+
+      // Execute the query
+      const data = await client.query({
+        data: { query },
+      });
+
+      // Check for GraphQL errors
+      if (data.body.errors) {
+        throw new Error(
+          `GraphQL errors: ${data.body.errors.map((e) => e.message).join(", ")}`
+        );
+      }
+
+      // Extract sales channel data
+      const salesChannels = data.body.data.publications.edges.map((edge) => ({
+        id: edge.node.id,
+        name: edge.node.name,
+      }));
+
+      return {
+        success: true,
+        message: "Sales channels fetched successfully",
+        salesChannels,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: "Failed to fetch sales channels: " + error.message,
+      };
     }
   }
 }

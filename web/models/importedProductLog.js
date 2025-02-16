@@ -50,6 +50,15 @@ class ImportedProductsLogsModel {
       select: { ProductReferences: true, ProductId: true },
     });
   }
+  static async findLog(id, shop) {
+    return await prisma.importedProductLog.findFirst({
+      where: {
+        ProductId: id,
+        ShopName: shop,
+      },
+      select: { ProductReferences: true, ProductId: true },
+    });
+  }
   static async getImportedProductLogsDateWise(CreateAt, UpdatedAt) {
     return await prisma.importedProductLog.findMany({
       where: {

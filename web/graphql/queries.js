@@ -77,6 +77,7 @@ query GetProduct($id: ID!) {
     title
     category{
       fullName
+      id
     }
     status
     tags
@@ -182,6 +183,16 @@ query GetProduct($id: ID!) {
       }
     }
     vendor
+    productType
+    metafields(first:250){
+      edges{
+        node{
+          key
+          value
+          type
+        }
+      }
+    }
     collections(first: 20) {
       nodes {
         id
@@ -203,3 +214,14 @@ export const getLocationQuery = `
               }
             }
           `;
+
+export const getSalesChannelsQuery = `query {
+        publications(first: 250) {
+          edges {
+            node {
+              id
+              name
+            }
+          }
+        }
+      }`;

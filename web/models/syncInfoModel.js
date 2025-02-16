@@ -83,7 +83,7 @@ export async function syncInfoUpdate(
 export async function getRemaining(shop) {
   try {
     let syncStatus = await prisma.syncStatus.findFirst({
-      where: { Shop: shop.shop },
+      where: { Shop: shop },
       select: {
         Remaining: true,
         Total: true,
@@ -115,7 +115,6 @@ export async function getSyncInfo(shop) {
         synInfo.UpdatedAt.toISOString()
       );
 
-    console.log({ importedProducts });
 
     return synInfo;
   } catch (error) {

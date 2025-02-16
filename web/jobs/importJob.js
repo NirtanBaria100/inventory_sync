@@ -19,8 +19,8 @@ export async function producerQueueBulk(marketplaces, products) {
   await StoreInQueueInstance.addBulk(data);
 }
 
-export async function producerQueue(data) {
-  logger.info("Import job is added to queue for shop:" + data.shop);
+export async function SyncProducerQueue(data) {
+  // logger.info("Import job is added to queue for shop:" + data.shop);
 
   await StoreInQueueInstance.add(QueueName, data);
 
@@ -30,15 +30,15 @@ export async function producerQueue(data) {
 export const worker = new Worker(
   QueueName,
   async (job) => {
-    const { products, marketplaces,shop } = job.data; // Access job.data
-    logger.info(`Processing job: ${job.id}`);
-    logger.info("Data: " + JSON.stringify({ job: job.data }));
+    const { products, marketplaces, shop, session } = job.data; // Access job.data
+    logger.info(`Processing Import job: ${job.id}`);
+
     let syncStatus = await getRemaining(job.data.shop);
 
     //updates the status of job in the database to in-progress
-    logger.info("Saving sync info to database!🤔: " + job.data.shop);
+    // logger.info("Saving sync info to database!🤔: " + shop);
     await syncInfoUpdate(
-      job.data.shop,
+      shop,
       syncStatus.Total,
       0,
       jobStates.Inprogress,
@@ -48,7 +48,7 @@ export const worker = new Worker(
     );
 
     let productToImport = await productImportModel.findProductsFromImportLogs(
-      job.data.shop
+      shop
     );
 
     let productsToImportFilter = productToImport.data.filter(
@@ -56,15 +56,25 @@ export const worker = new Worker(
     );
 
     logger.info(
-      "Filtered Products to be import count: " + productsToImportFilter.length
+      "Products about to import Count: " + productsToImportFilter.length
     );
 
     let getColumnsToBeSync = await getColumns(shop);
 
-    // let brandStoreName = job.data.shop;
+    // let brandStoreName = shop;
     // Uncomment and fix the foreach logic
     for (const product of productsToImportFilter) {
-      await productImportModel.createProductToMarketPlace(product, job.data,getColumnsToBeSync);
+      try {
+        await productImportModel.createProductToMarketPlace(
+          product,
+          job.data,
+          getColumnsToBeSync,
+          session
+        );
+      } catch (error) {
+        logger.error(error.message);
+        continue;
+      }
     }
   },
   { connection: redisConnection } // Fix connection configuration

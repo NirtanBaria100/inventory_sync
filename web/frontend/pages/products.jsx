@@ -13,6 +13,7 @@ import {
   Link,
   Page,
   ProgressBar,
+  Select,
   Text,
   TextField
 } from '@shopify/polaris';
@@ -55,7 +56,6 @@ const Products = () => {
     Tags: false,
     CustomType: false,
     Images: false,
-    ThemeTemplate: false,
     Status: false,
     PublishedOnStore: false,
     Variants: false,
@@ -103,7 +103,7 @@ const Products = () => {
     "Tags",
     "CustomType",
     "Images",
-    "ThemeTemplate",
+
     "Status",
     "PublishedOnStore",
     "Variants",
@@ -236,6 +236,10 @@ const Products = () => {
 
   // Polling for sync updates
   useEffect(() => {
+
+
+
+
     if (!isSyncing) return;
 
 
@@ -247,6 +251,10 @@ const Products = () => {
       mode: '',
       TotalMarketPlaces: 0, RemainingMarketPlaces: 0
     });
+
+
+
+
     // Start the interval
     intervalRef.current = setInterval(updateProgressBar, IntervalTimeDuration);
 
@@ -258,6 +266,8 @@ const Products = () => {
         intervalRef.current = null;
       }
     };
+
+
   }, [isSyncing, updateProgressBar, IntervalTimeDuration]);
 
   // Search handler
@@ -267,6 +277,25 @@ const Products = () => {
     dispatch(setProducts(response.data));
     dispatch(setLoading(false));
   };
+
+
+
+  // This useEffect is implemented for update sync info on first load
+  useEffect(() => {
+    (async () => {
+      const response = await fetch('/api/products/sync-info');
+      const data = await response.json();
+
+      if (response.ok && data?.data) {
+        if (data.data.State !== jobStates.Finish) {
+          setIsSyncing(true);
+
+        }
+      } else {
+        setIsSyncing(false);
+      }
+    })()
+  }, [])
 
   // Set the initial state of the column selection from database
   useEffect(() => {
@@ -278,21 +307,29 @@ const Products = () => {
             "Content-Type": "application/json",
           }
         });
+        const data = await response.json();
         if (response.ok) {
-          const data = await response.json();
           setIsFetchingColumnSettings(false)
           if (data && data.columns) {
-            setColumnSelection(data.columns);
+            return setColumnSelection(data.columns);
           }
         }
+        setIsFetchingColumnSettings(false);
+        return shopify.toast.show(data.message, { isError: true });
+
       } catch (error) {
-        console.error("Error fetching columns:", error);
-        setIsFetchingColumnSettings(false)
+        return setIsFetchingColumnSettings(false)
       }
     };
 
     fetchColumns();
   }, []);
+
+
+  // Trigger search when productStatus changes
+  useEffect(() => {
+    handleSearchQuery();
+  }, [Query.productStatus]); // Runs every time productStatus changes
 
   return (
     <Page>
@@ -310,7 +347,7 @@ const Products = () => {
             title={<strong>Syncing Status: <Badge tone={syncInfo.State === jobStates.Inprogress ? 'info' : syncInfo.State === jobStates.Finish ? 'success' : syncInfo.State === jobStates.Inqueue && 'enabled'}>
               {syncInfo.State}
             </Badge></strong>}
-            tone="info"
+            tone="success"
           >
             <BlockStack gap={"200"}>
               <Text variant='headingSm'>Importing Products to Marketplace</Text>
@@ -342,6 +379,7 @@ const Products = () => {
 
       <Card>
         <div style={{ marginBottom: "10px" }}>
+
           <Layout columns={2}>
             <Layout.Section variant='oneHalf'>
 
@@ -379,6 +417,8 @@ const Products = () => {
               </InlineGrid>
             </Layout.Section>
           </Layout>
+
+
         </div>
         <div style={{ marginBlock: "20px" }}>
           {/* <Card > */}
@@ -406,7 +446,7 @@ const Products = () => {
                       onChange={() => handleSelectAll(variantKeys, selectAllVariants, setSelectAllVariants)}
                     />
                     {variantKeys.map((key, index) => (
-                      <Checkbox key={index} label={key.replace(/([A-Z])/g, " $1")} checked={columnSelection[key]} onChange={() => handleCheckboxChange(key)} />
+                      <Checkbox key={index} label={key} checked={columnSelection[key]} onChange={() => handleCheckboxChange(key)} />
                     ))}
                   </BlockStack>
 
@@ -418,7 +458,7 @@ const Products = () => {
                       onChange={() => handleSelectAll(productKeys, selectAllProducts, setSelectAllProducts)}
                     />
                     {productKeys.map((key, index) => (
-                      <Checkbox key={index} label={key.replace(/([A-Z])/g, " $1")} checked={columnSelection[key]} onChange={() => handleCheckboxChange(key)} />
+                      <Checkbox key={index} label={key} checked={columnSelection[key]} onChange={() => handleCheckboxChange(key)} />
                     ))}
                   </BlockStack>
 
@@ -430,9 +470,24 @@ const Products = () => {
           </BlockStack>
           {/* </Card> */}
         </div>
-        <Table setIsSyncing={setIsSyncing} IsSyncing={isSyncing} TableData={productList} Headings={productTableHeadings} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "end", gap: "20px", marginBlock: "10px" }}>
+          <Text variant='bodyLg'>Filter:</Text>
+          <Select options={[
+            { label: "All", value: "" },
+            { label: "Sync", value: "true" },
+            { label: "UnSync", value: "false" }
+
+          ]}
+            disabled={loading}
+            onChange={(value) => dispatch(setQuery({ ...Query, productStatus: value }))}
+            value={Query.productStatus}
+
+          />
+
+        </div>
+        <Table setIsSyncing={setIsSyncing} IsSyncing={isSyncing} TableData={productList} columnSelection={columnSelection} Headings={productTableHeadings} handleToggle={handleToggle} />
       </Card>
-    </Page>
+    </Page >
   );
 };
 

@@ -54,6 +54,15 @@ export const productsetMutation = `mutation createProduct($productSet: ProductSe
   productSet( input: $productSet) {
     product {
       id
+      metafields (first:250){
+        edges{
+          node{
+            key
+            value
+            type
+          }
+        }
+      }
     }
     userErrors {
       field
@@ -61,3 +70,15 @@ export const productsetMutation = `mutation createProduct($productSet: ProductSe
     }
   }
 }`;
+
+export const publishUpdateMutation = `mutation publicationUpdate($id: ID!, $input: PublicationUpdateInput!) {
+        publicationUpdate(id: $id, input: $input) {
+          publication {
+            id
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`;

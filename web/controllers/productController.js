@@ -6,41 +6,39 @@ import {
   fetchVendorsQuery,
 } from "../graphql/queries.js";
 import productImportModel from "../models/productImportModel.js";
-import { producerQueue } from "../jobs/importJob.js";
+import { SyncProducerQueue } from "../jobs/importJob.js";
 import { UnSyncProducerQueue } from "../jobs/ProdcutUnsyncJob.js";
 import { getSyncInfo, syncInfoCreate } from "../models/syncInfoModel.js";
 import { jobStates } from "../utils/jobStates.js";
 import { jobMode } from "../frontend/utils/jobMode.js";
 import { getColumns, saveColmns } from "../models/ColumnSelection.js";
-import shopify from "../shopify.js"
+import shopify from "../shopify.js";
 class productController {
-
   static async getProductBatch(req, res) {
     try {
       const { accessToken, shop } = res.locals.shopify.session;
       logger.info("Incoming request", { body: req.body });
 
-      const { searchQuery, FilterCriteria, endCursor, startCursor, event } =
-        req.body;
-        
+      const {
+        searchQuery,
+        FilterCriteria,
+        endCursor,
+        startCursor,
+        event,
+        productStatus,
+      } = req.body;
+
       // const allProducts = [];
       let limit = 250;
 
       const graphqlEndpoint = `https://${shop}/admin/api/2025-01/graphql.json`;
 
       let filterQuery = "";
-      logger.debug(
-        "FilterCriteria and searchQuery" +
-          JSON.stringify({
-            FilterCriteria,
-            searchQuery,
-          })
-      );
 
       if (FilterCriteria !== "") filterQuery = `vendor:${FilterCriteria}`;
-      if (searchQuery !== "") filterQuery = `title: like ${searchQuery}`;
+      if (searchQuery !== "") filterQuery = `title:${searchQuery}*`;
       if (searchQuery !== "" && FilterCriteria !== "")
-        filterQuery = `title:${searchQuery} AND vendor:${FilterCriteria}`;
+        filterQuery = `title:${searchQuery}* AND vendor:${FilterCriteria}`;
 
       const variables = {
         first: event == null ? limit : event == "onNext" ? limit : null,
@@ -53,7 +51,8 @@ class productController {
         variables.query = filterQuery;
       }
 
-      logger.debug("GraphQL query variables", { variables });
+      // console.log({variables})
+      // logger.debug("GraphQL query variables", { variables });
 
       const headers = {
         "Content-Type": "application/json",
@@ -66,21 +65,6 @@ class productController {
         { headers }
       );
       const data = response.data.data.products;
-
-      // Append fetched products to `allProducts`
-      // data.edges.forEach(async ({ node }) => {
-      //   let IsExistAlready = await productImportModel.findProductFromImportLogs(
-      //     shop,
-      //     node.id
-      //   );
-
-      //   allProducts.push({
-      //     id: node.id,
-      //     title: node.title,
-      //     vendor: node.vendor,
-      //     status: IsExistAlready?.data?.Status || false,
-      //   });
-      // });
 
       const allProducts = await Promise.all(
         data.edges.map(async ({ node }) => {
@@ -97,16 +81,19 @@ class productController {
         })
       );
 
-      logger.info(
-        "Fetched products and page info" +
-          JSON.stringify({
-            products: allProducts.length,
-            pageInfo: data.pageInfo,
-          })
-      );
+      // logger.info(
+      //   "Fetched products and page info" +
+      //     JSON.stringify({
+      //       products: allProducts.length,
+      //       pageInfo: data.pageInfo,
+      //     })
+      // );
 
       return res.status(200).json({
-        data: allProducts,
+        data:
+          productStatus != ""
+            ? allProducts.filter((product) => product.status == productStatus)
+            : allProducts,
         Pageinfo: data.pageInfo,
       });
     } catch (error) {
@@ -131,7 +118,7 @@ class productController {
   }
   static async fetchStoreVendors(req, res) {
     try {
-      logger.info("Fetching store vendors process started.");
+      // logger.info("Fetching store vendors process started.");
 
       // Retrieve the Shopify session
       const session = res.locals.shopify.session;
@@ -140,7 +127,7 @@ class productController {
         return res.status(400).json({ error: "Shopify session not found." });
       }
 
-      logger.info("Shopify session retrieved.", { shop: session.shop });
+      // logger.info("Shopify session retrieved.", { shop: session.shop });
 
       // Shopify GraphQL API endpoint
       const graphqlEndpoint = `https://${session.shop}/admin/api/2025-01/graphql.json`;
@@ -154,7 +141,7 @@ class productController {
         // GraphQL query to fetch product vendors with pagination
         const queryString = fetchVendorsQuery;
 
-        logger.debug("Fetching vendors batch...", { endCursor });
+        // logger.debug("Fetching vendors batch...", { endCursor });
 
         try {
           // Execute the GraphQL query
@@ -175,7 +162,7 @@ class productController {
             }
           );
 
-          logger.info("Response received from Shopify API.");
+          // logger.info("Response received from Shopify API.");
 
           // Parse response
           const productVendors = response.data?.data?.productVendors || {};
@@ -196,9 +183,9 @@ class productController {
       }
 
       if (vendors.length > 0) {
-        logger.info("All vendors retrieved successfully.", {
-          count: vendors.length,
-        });
+        // logger.info("All vendors retrieved successfully.", {
+        //   count: vendors.length,
+        // });
         return res.status(200).json({ vendors });
       } else {
         logger.warn("No vendors found in the Shopify store.");
@@ -218,10 +205,11 @@ class productController {
     }
   }
   static async Import_initialize(req, res) {
-    const { shop } = res.locals.shopify.session;
+    const session = res.locals.shopify.session;
+    const { shop } = session;
     let { products, brandStoreId } = req.body;
     // let marketPlaces = ["abc", "xyz"];
-    logger.info("Incoming request Products", { body: products });
+    // logger.info("Incoming request Products", { body: products });
 
     //lets save selected products to database that can be used while
     //importing products to marketplace upon the execution of queue of this brand store.
@@ -240,7 +228,6 @@ class productController {
           .json({ message: saveProductsToDatabase.message });
       }
 
-      logger.info(saveProductsToDatabase.message);
       let queue_response = "";
       try {
         //I am also managing the queue in database also
@@ -248,13 +235,17 @@ class productController {
           syncDetails,
           shop,
           jobStates.Inqueue,
-          "sync",
+          jobMode.sync,
           0,
           0
         );
 
         //redis queue
-        queue_response = await producerQueue({ shop, brandStoreId });
+        queue_response = await SyncProducerQueue({
+          shop,
+          brandStoreId,
+          session,
+        });
       } catch (error) {
         logger.error(error.message);
       }
@@ -330,19 +321,21 @@ class productController {
 
       // Fetch the saved column selections from the database
       const columns = await getColumns(shop);
-      if (!columns) {
-        return res
-          .status(404)
-          .json({ message: "Internal server error!", columns: {} });
-      }
+      console.log({ columns });
+      // if (!columns) {
+      //   return res
+      //     .status(500)
+      //     .json({ message: "Internal server error!", columns: {} });
+      // }
 
       return res.status(200).json({ columns: columns });
     } catch (error) {
       logger.error(`Error fetching column selections:, ${error}`);
-      return res.status(500).json({ message: "Internal server error!" });
+      return res
+        .status(500)
+        .json({ message: "Internal server error!" + error });
     }
   }
-  
 }
 
 export default productController;

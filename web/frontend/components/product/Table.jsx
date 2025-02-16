@@ -14,7 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { handleSyncProducts, handleOnNextEvent, handleOnPrevEvent, handleUnSyncProducts } from './helper/functions';
 import { PlusCircleIcon, DeleteIcon } from '@shopify/polaris-icons';
 
-export default function Table({ setIsSyncing, IsSyncing, TableData, Headings }) {
+export default function Table({ setIsSyncing, IsSyncing, TableData,columnSelection, Headings,handleToggle }) {
     const { Query, loading, hasNextPage, hasPreviousPage, startCursor, endCursor, value } = useSelector(state => state.products);
     // const [syncLoader, setSyncLoader] = useState(false);
     const dispatch = useDispatch();
@@ -62,7 +62,7 @@ export default function Table({ setIsSyncing, IsSyncing, TableData, Headings }) 
                     content: 'Sync',
                     icon: PlusCircleIcon,
                     disabled: IsSyncing,
-                    onAction: () => handleSyncProducts(selectedResources, value, setIsSyncing, IsSyncing, storeData.id, dispatch),
+                    onAction: () => handleSyncProducts(selectedResources, value, setIsSyncing, IsSyncing, storeData.id, dispatch,columnSelection,handleToggle),
                 }
             ]);
         }
@@ -96,7 +96,7 @@ export default function Table({ setIsSyncing, IsSyncing, TableData, Headings }) 
     return (
         <LegacyCard>
             <IndexTable
-
+            
                 loading={loading}
                 condensed={useBreakpoints().smDown}
                 resourceName={resourceName}

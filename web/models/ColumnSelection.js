@@ -18,9 +18,9 @@ export async function saveColmns(shop, data) {
 }
 
 export async function getColumns(shop) {
-  return await prisma.columnSelection.findUnique({
+  return await prisma.columnSelection.findFirst({
     where: {
-      shop: shop
+      shop: shop,
     },
   });
 }

@@ -15,17 +15,17 @@ import { jobMode } from "../frontend/utils/jobMode.js";
 class productImportModel {
   static async importProductToMarketPlace(
     product,
-    shop,
+    data,
     MarketPlaceStoreSession,
-    getColumnsToBeSync
+    getColumnsToBeSync,
+    session
   ) {
-
     //Create product on marketplace.
     try {
       let createdProduct = await ProductModel.CreateProduct(
         MarketPlaceStoreSession,
         product,
-        shop
+        data.shop
       );
 
       logger.info(
@@ -40,13 +40,13 @@ class productImportModel {
           product.id,
           createdProduct,
           MarketPlaceStoreSession,
-          shop
+          data.shop
         );
 
-        let syncStatus = await getRemaining(shop);
+        let syncStatus = await getRemaining(data.shop);
 
         let afterUpdate = await syncInfoUpdate(
-          shop.shop,
+          data.shop,
           syncStatus.Total,
           syncStatus.Remaining + 1,
           jobStates.Inprogress,
@@ -57,7 +57,7 @@ class productImportModel {
 
         if (afterUpdate.Remaining == syncStatus.Total) {
           await syncInfoUpdate(
-            shop.shop,
+            data.shop,
             syncStatus.Total,
             syncStatus.Total,
             jobStates.Finish,
@@ -68,13 +68,45 @@ class productImportModel {
         }
 
         logger.info(
-          "Product sync status updated at ImportedProductsLogs table in database Product id:" +
-            product.id
+          `Products Remaining ${afterUpdate.Remaining}/${afterUpdate.Total}`
         );
+
+        // logger.info(
+        //   "Product sync status updated at ImportedProductsLogs table in database Product id:" +
+        //     product.id
+        // );
       } catch (error) {
         logger.error("Error while creating products:", error);
       }
     } catch (error) {
+      let syncStatus = await getRemaining(data.shop);
+
+      let afterUpdate = await syncInfoUpdate(
+        data.shop,
+        syncStatus.Total,
+        syncStatus.Remaining + 1,
+        jobStates.Inprogress,
+        jobMode.sync,
+        0,
+        0
+      );
+
+      if (afterUpdate.Remaining == syncStatus.Total) {
+        await syncInfoUpdate(
+          data.shop,
+          syncStatus.Total,
+          syncStatus.Total,
+          jobStates.Finish,
+          jobMode.sync,
+          0,
+          0
+        );
+      }
+
+      logger.info(
+        `Products Remaining ${afterUpdate.Remaining}/${afterUpdate.Total}`
+      );
+
       let errorMessage =
         "Error while importing Product to marketPlace: " + error.message;
 
@@ -84,7 +116,7 @@ class productImportModel {
       try {
         let createlogs = await ImportedProductErrorLog.CreateErrorLog(
           product,
-          shop,
+          data,
           MarketPlaceStoreSession,
           errorMessage
         );
@@ -106,21 +138,28 @@ class productImportModel {
     }
   }
 
-  static async createProductToMarketPlace(product, shop,getColumnsToBeSync) {
+  static async createProductToMarketPlace(
+    product,
+    queueData,
+    getColumnsToBeSync,
+    session
+  ) {
     try {
       //find connected marketplace with the brand store
       let connectedStores = await findConnectedDestinationStores(
-        shop.brandStoreId
+        queueData.brandStoreId
       );
 
       logger.info(
-        "The marketplaces that are connected with with this brand store is: " +
-          JSON.stringify({ connectedStores })
+        "Products will be sync to following marketplaces: " +
+          JSON.stringify({
+            connectedStores: connectedStores.destinationStore,
+          })
       );
 
       // Fetch marketplace session from Db by shopName
 
-      let BrandStoreSession = await GetSessionByShopName(shop.shop);
+      let BrandStoreSession = await GetSessionByShopName(queueData.shop);
 
       if (!BrandStoreSession) {
         logger.error(
@@ -128,7 +167,7 @@ class productImportModel {
         );
       }
 
-      logger.info("Brand store session: " + BrandStoreSession.id);
+      // logger.info("Brand store session: " + BrandStoreSession.id);
       // Check if the collection already exists
 
       //To fetch the further details for the product we call graphql api
@@ -146,16 +185,21 @@ class productImportModel {
         logger.error(
           `Session does not found for shop: ${MarketPlaceStoreSession.shop}`
         );
+        throw new Error(
+          `Session does not found for shop: ${MarketPlaceStoreSession.shop}`
+        );
       }
 
       await this.importProductToMarketPlace(
         productDetails,
-        shop,
+        queueData,
         MarketPlaceStoreSession,
-        getColumnsToBeSync
+        getColumnsToBeSync,
+        session
       );
     } catch (error) {
       logger.error(error.message);
+      throw new Error("Error while importing products: " + error.message);
     }
     // }
   }
@@ -341,6 +385,12 @@ class productImportModel {
 
       let ProductMetadata = [];
       for (const log of importedProductLogs) {
+        if (!log.ProductReferences) {
+          logger.info(
+            "Product Reference not found for product:" + log.ProductId
+          );
+          continue;
+        }
         for (const ProductReference of log.ProductReferences) {
           if (ProductReference.marketplace) {
             const Session = await GetSessionByShopName(
@@ -395,7 +445,11 @@ class productImportModel {
           (product) => ({ refId: product.refId, id: product.Id })
         );
 
-        await ProductModel.deleteProductsBulk(mapFilteredProducts, marketPlace,shop);
+        await ProductModel.deleteProductsBulk(
+          mapFilteredProducts,
+          marketPlace,
+          shop
+        );
 
         //Update the sync Status of imported product to datbase
         console.log(
@@ -405,14 +459,13 @@ class productImportModel {
 
         try {
           for (const id of mapFilteredProducts.map((product) => product.id)) {
-            
             try {
               await ImportedProductsLogsModel.deleteMany(id, shop);
             } catch (error) {
               logger.error(
                 `Error while deleting logs from database:${error.message}`
               );
-          
+
               continue;
             }
           }
@@ -421,7 +474,6 @@ class productImportModel {
         }
 
         let syncStatus = await getRemaining(shop);
-
 
         let afterUpdate = await syncInfoUpdate(
           shop,

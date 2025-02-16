@@ -10,9 +10,15 @@ import {
 
 export async function getbatchProducts(page, Query) {
   const URL = `/api/products/batch`;
-
+  console.log(Query);
   const payload = {
     FilterCriteria: Query?.FilterCriteria,
+    productStatus:
+      Query?.productStatus == "true"
+        ? true
+        : Query?.productStatus == "false"
+        ? false
+        : "",
     searchQuery: Query?.searchQuery,
     page: page,
     endCursor: Query?.endCursor,
@@ -114,10 +120,20 @@ export const handleSyncProducts = async (
   setIsSyncing,
   IsSyncing,
   id,
-  dispatch
+  dispatch,
+  columnSelection,
+  handleToggle
 ) => {
   console.log("Starting product import to marketplaces...");
 
+  console.log(
+    "Testing",
+    Object.values(columnSelection).some((value) => value === true)
+  );
+  if (!Object.values(columnSelection).some((value) => value === true)) {
+    handleToggle();
+    return shopify.toast.show("Please select the fields!", { isError: true });
+  }
   setIsSyncing(true);
 
   // Filter products based on selected resource IDs
@@ -150,12 +166,9 @@ export const handleSyncProducts = async (
 
     const result = await response.json();
 
-    console.log("Response",response.ok)
+    console.log("Response", response.ok);
 
     if (response.ok) {
-
-  
-      
       // Update product status in the store
       dispatch(
         updateProductStatus({
@@ -164,7 +177,6 @@ export const handleSyncProducts = async (
         })
       );
 
-     
       shopify.toast.show(result.message || "Products imported successfully!");
     } else {
       // Handle error response
@@ -178,7 +190,7 @@ export const handleSyncProducts = async (
     shopify.toast.show("An error occurred while importing products.", {
       isError: true,
     });
-  } 
+  }
 };
 
 export const handleUnSyncProducts = async (
@@ -196,7 +208,6 @@ export const handleUnSyncProducts = async (
   const filteredProducts = products.filter((item) =>
     selectedResources.includes(item.id)
   );
-
 
   // Filter products that are  synced
   const SyncedProducts = filteredProducts.filter((x) => x.status);
@@ -230,9 +241,7 @@ export const handleUnSyncProducts = async (
           Status: false,
         })
       );
-      shopify.toast.show(
-        result.message || "Un-syncing in progress!"
-      );
+      shopify.toast.show(result.message || "Un-syncing in progress!");
     } else {
       // Handle error response
       shopify.toast.show(result.message || "Failed to desyncronize products.", {
@@ -241,5 +250,5 @@ export const handleUnSyncProducts = async (
     }
   } catch (error) {
     shopify.toast.show("Error while desyncronize");
-  } 
+  }
 };

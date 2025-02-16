@@ -68,7 +68,7 @@ export const findConnectedSourceStores = async (destinationStoreId) => {
 export const findStoreByName = (storeName) => {
   return prisma.store.findFirst({
     where: { storeName },
-    select: { id: true, type: true },
+    select: { id: true, type: true,storeName:true },
   });
 };
 

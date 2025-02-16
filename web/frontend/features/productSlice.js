@@ -6,6 +6,7 @@ const initialState = {
   Query: {
     searchQuery: "",
     FilterCriteria: "",
+    productStatus:"",
   },
   vendors: [],
   startCursor: "",
@@ -36,12 +37,14 @@ const productSlice = createSlice({
 
       return { ...state, value: updatedProducts };
     },
+    
     setLoading: (state, action) => {
       return { ...state, loading: action.payload };
     },
     setQuery: (state, action) => {
       return { ...state, Query: action.payload };
     },
+    
     setVendors: (state, action) => {
       return { ...state, vendors: action.payload };
     },
