@@ -6,6 +6,7 @@ import { jobStates } from "../utils/jobStates.js";
 import { getRemaining, syncInfoUpdate } from "../models/syncInfoModel.js";
 import { jobMode } from "../frontend/utils/jobMode.js";
 import { getColumns } from "../models/ColumnSelection.js";
+import { findConnectedDestinationStores } from "../models/connectionModel.js";
 
 const QueueName = "Stores-Inqueue-products";
 
@@ -33,6 +34,22 @@ export const worker = new Worker(
     const { products, marketplaces, shop, session } = job.data; // Access job.data
     logger.info(`Processing Import job: ${job.id}`);
 
+    //find connected marketplace with the brand store
+    let connectedStores = await findConnectedDestinationStores(
+      job.data.brandStoreId
+    );
+
+    let connectedStoresNames = connectedStores.map(
+      (item) => item.destinationStore.storeName
+    );
+
+    logger.info(
+      "Products will be sync to following marketplaces: " +
+        JSON.stringify({
+          connectedStores: connectedStoresNames,
+        })
+    );
+
     let syncStatus = await getRemaining(job.data.shop);
 
     //updates the status of job in the database to in-progress
@@ -43,7 +60,7 @@ export const worker = new Worker(
       0,
       jobStates.Inprogress,
       jobMode.sync,
-      0,
+      connectedStoresNames.length,
       0
     );
 
@@ -63,17 +80,60 @@ export const worker = new Worker(
 
     // let brandStoreName = shop;
     // Uncomment and fix the foreach logic
-    for (const product of productsToImportFilter) {
-      try {
-        await productImportModel.createProductToMarketPlace(
-          product,
-          job.data,
-          getColumnsToBeSync,
-          session
+    for (const destinationStoreName of connectedStoresNames) {
+      logger.info(
+        `============================= Importing Products to : ${destinationStoreName} ==================================`
+      );
+      for (const product of productsToImportFilter) {
+        try {
+          await productImportModel.createProductToMarketPlace(
+            product,
+            job.data,
+            getColumnsToBeSync,
+            session,
+            destinationStoreName
+          );
+        } catch (error) {
+          logger.error(error.message);
+          continue;
+        }
+      }
+
+      let syncStatus = await getRemaining(shop);
+
+      let afterUpdate = await syncInfoUpdate(
+        shop,
+        productsToImportFilter.length,
+        syncStatus.Remaining,
+        jobStates.Inprogress,
+        jobMode.sync,
+        syncStatus.TotalMarketPlaces,
+        syncStatus.RemainingMarketPlaces + 1
+      );
+
+      if (
+        afterUpdate.Remaining == syncStatus.Total &&
+        afterUpdate.RemainingMarketPlaces == afterUpdate.TotalMarketPlaces
+      ) {
+        await syncInfoUpdate(
+          shop,
+          syncStatus.Total,
+          syncStatus.Remaining,
+          jobStates.Finish,
+          jobMode.sync,
+          afterUpdate.TotalMarketPlaces,
+          afterUpdate.RemainingMarketPlaces
         );
-      } catch (error) {
-        logger.error(error.message);
-        continue;
+      } else {
+        await syncInfoUpdate(
+          shop,
+          syncStatus.Total,
+          0,
+          jobStates.Finish,
+          jobMode.sync,
+          afterUpdate.TotalMarketPlaces,
+          afterUpdate.RemainingMarketPlaces
+        );
       }
     }
   },

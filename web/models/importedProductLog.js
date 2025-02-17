@@ -11,14 +11,18 @@ class ImportedProductsLogsModel {
     try {
       let ProductReferences = [];
 
-      // let Logs = await prisma.importedProductLog.findFirst({
-      //   where: { ProductId: product_id, ShopName: shop.ShopName },
-      //   select: { ProductReferences: true },
-      // });
+      let Logs = await prisma.importedProductLog.findFirst({
+        where: { ProductId: product_id, ShopName: shop.ShopName },
+        select: { ProductReferences: true },
+      });
 
-      // if (Logs.ProductReferences) {
-      //   ProductReferences.push(Logs.ProductReferences);
-      // }
+      // Properly concatenating existing references
+      ProductReferences = [
+        ...ProductReferences,
+        ...(Logs?.ProductReferences || []),
+      ];
+
+      console.log({ ProductReferences });
 
       ProductReferences.push({
         id: createdProduct.id,
@@ -32,9 +36,10 @@ class ImportedProductsLogsModel {
           ProductReferences: ProductReferences,
         },
       });
-      logger.info("Logs has been created for imported product!");
+
+      logger.info("Logs have been created for imported product!");
     } catch (error) {
-      logger.info("Error while creating logs for imported products:".error);
+      logger.info("Error while creating logs for imported products:", error);
       throw new Error(error);
     }
   }

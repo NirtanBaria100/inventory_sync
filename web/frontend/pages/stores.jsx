@@ -51,9 +51,10 @@ function stores() {
 
                 if (response.status === 200) {
                     const data = await response.json();
+                    console.log({ data })
 
                     if (storeData.type === "source") {
-                        setRows([{ id: data.destinationStore.id, storeName: data.destinationStore.storeName, status: 'Connected' }]);
+                        setRows(data.destinationStore);
                         setconnectButtonEnabled(false);
                     } else if (storeData.type === "destination") {
                         setRows(data.sourceStore); // filtered the data in the backend so not extracting everything here
@@ -136,7 +137,7 @@ function stores() {
                     </div>
                     {storeData.type === 'source' && (
                         <Button
-                            disabled={showConnectStore || !connectButtonEnabled}
+                            // disabled={showConnectStore || !connectButtonEnabled}
                             variant="primary"
                             tone="critical"
                             onClick={handleButtonClick}
@@ -149,7 +150,7 @@ function stores() {
 
                 <div style={{ marginTop: "10px", display: 'flex', flexDirection: "column", alignItems: 'center', }}>
                     <div style={{ width: '100%' }}>
-                        {!showConnectStore && !showDisconnectStore && ( 
+                        {!showConnectStore && !showDisconnectStore && (
                             // showing the table in this condition  
                             <LegacyCard>
                                 {rows.length > 0 ? (

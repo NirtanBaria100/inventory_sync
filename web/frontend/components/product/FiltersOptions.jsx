@@ -8,12 +8,12 @@ export default function FiltersOptions({ data }) {
     const { Query } = products;
 
     // Ensure unique keys by combining value and index
-    const options = data.map((item, index) => ({ 
+    const options = data?.map((item, index) => ({ 
         value: item, 
         label: item, 
         key: `${item}-${index}` // Combine value and index for uniqueness
     }));
-    options.push({ value: "", label: "All vendors", key: "all-vendors" }); // Unique key for "All vendors"
+    options?.push({ value: "", label: "All vendors", key: "all-vendors" }); // Unique key for "All vendors"
 
     return (
         <Select

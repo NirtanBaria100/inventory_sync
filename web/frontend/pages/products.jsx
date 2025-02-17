@@ -176,7 +176,7 @@ const Products = () => {
         setSyncInfo({
           Total: data.data.Total,
           Remaining: data.data.Remaining,
-          Percentage: data.data.mode == jobMode.unSync ? (data.data.RemainingMarketPlaces / data.data.TotalMarketPlaces) * 100 : (data.data.Remaining / data.data.Total * 100),
+          Percentage: (data.data.RemainingMarketPlaces / data.data.TotalMarketPlaces) * 100,
           State: data.data.State,
           mode: data.data.mode,
           TotalMarketPlaces: data.data.TotalMarketPlaces,
@@ -352,7 +352,8 @@ const Products = () => {
             <BlockStack gap={"200"}>
               <Text variant='headingSm'>Importing Products to Marketplace</Text>
               <ProgressBar progress={syncInfo.Percentage} animated size='medium' />
-              <span>Products Imported {syncInfo.Remaining}/{syncInfo.Total}</span>
+              <span>Marketplaces {syncInfo.RemainingMarketPlaces}/{syncInfo.TotalMarketPlaces}</span>
+              <span>Products {syncInfo.Remaining}/{syncInfo.Total}</span>
             </BlockStack>
           </Banner>
         </div>

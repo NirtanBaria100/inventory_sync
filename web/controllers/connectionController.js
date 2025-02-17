@@ -10,14 +10,13 @@ import {
   findConnectionBySourceId,
   findConnectionByDestinationId,
   updateStoreType,
-  deleteConnection
+  deleteConnection,
 } from "../models/connectionModel.js";
-
 
 // we create a connection between two stores
 export const createConnection = async (req, res) => {
   const shop = res.locals.shopify.session.shop;
-  console.log(res.locals.shopify.session)
+  console.log(res.locals.shopify.session);
   const key = req.body.key;
 
   logger.info(`Received connection request from shop: ${shop}`);
@@ -45,23 +44,25 @@ export const createConnection = async (req, res) => {
       return res.status(400).send({ error: "Invalid key" });
     } else if (destinationShop.type !== "destination") {
       logger.warn(`Store with key ${key} is not a destination store.`);
-      return res.status(400).send({ error: "Store is not a destination store" });
+      return res
+        .status(400)
+        .send({ error: "Store is not a destination store" });
     }
 
     const destinationShopId = destinationShop.id;
     logger.info(`Destination shop verified: ${destinationShopId}`);
 
     // Check if a connection between source and destination already exists
-    const existingConnection = await checkExistingConnection(sourceShopId);
-    if (existingConnection) {
-      logger.info(
-        `Connection already exists between source: ${sourceShopId} and destination: ${destinationShopId}`
-      );
-      return res.status(200).json({
-        message: "Connection already exists",
-        connection: existingConnection,
-      });
-    }
+    // const existingConnection = await checkExistingConnection(sourceShopId);
+    // if (existingConnection) {
+    //   logger.info(
+    //     `Connection already exists between source: ${sourceShopId} and destination: ${destinationShopId}`
+    //   );
+    //   return res.status(200).json({
+    //     message: "Connection already exists",
+    //     connection: existingConnection,
+    //   });
+    // }
 
     // Create a new connection if one does not exist
     const newConnection = await createNewConnection(
@@ -80,7 +81,6 @@ export const createConnection = async (req, res) => {
     return res.status(500).send({ error: "Internal Server Error" });
   }
 };
-
 
 // returns the connected destination stores
 // this is only called by source stores
@@ -105,12 +105,22 @@ export const connectedDestinationStores = async (req, res) => {
       });
     }
 
+    console.log({ existingConnection });
+
+    // Filtering the response for the frontend
+    const result = existingConnection.map((item) => ({
+      id: item.destinationStore.id,
+      storeName: item.destinationStore.storeName,
+      status: "Connected",
+    }));
+
     logger.info(`Connected destination stores retrieved for id: ${id}`);
-    res.status(200).json({ destinationStore: existingConnection.destinationStore });
+    res.status(200).json({ destinationStore: result });
   } catch (error) {
     logger.error(`Error in connectedDestinationStores: ${error.message}`);
     res.status(500).json({
-      message: "An error occurred while retrieving connected destination stores.",
+      message:
+        "An error occurred while retrieving connected destination stores.",
     });
   }
 };
@@ -155,9 +165,6 @@ export const connectedSourceStores = async (req, res) => {
   }
 };
 
-
-
-
 // cahnging the type of the store
 export const changeStoreType = async (req, res) => {
   try {
@@ -185,18 +192,24 @@ export const changeStoreType = async (req, res) => {
       const connectionData = await findConnectionBySourceId(storeId); // if connections exist then we can't change type of store until removed
 
       if (connectionData) {
-        logger.warn(`Cannot change store type. Active connections found for store ID: ${storeId}`);
+        logger.warn(
+          `Cannot change store type. Active connections found for store ID: ${storeId}`
+        );
         return res.status(400).json({
-          message: "Cannot change store type. Store has active connections. Please remove them from the stores tab first.",
+          message:
+            "Cannot change store type. Store has active connections. Please remove them from the stores tab first.",
         });
       }
     } else if (storeType === "destination") {
       const connectionData = await findConnectionByDestinationId(storeId); // if connections exist then we can't change type of store until removed
 
       if (connectionData) {
-        logger.warn(`Cannot change store type. Active connections found for store ID: ${storeId}`);
+        logger.warn(
+          `Cannot change store type. Active connections found for store ID: ${storeId}`
+        );
         return res.status(400).json({
-          message: "Cannot change store type. Store has active connections. Please remove them from the stores tab first.",
+          message:
+            "Cannot change store type. Store has active connections. Please remove them from the stores tab first.",
         });
       }
     }
@@ -214,10 +227,7 @@ export const changeStoreType = async (req, res) => {
   }
 };
 
-
-
-
-// if we want to remove a connection, can be used by destiantin and source store 
+// if we want to remove a connection, can be used by destiantin and source store
 export const removeConnection = async (req, res) => {
   const { sourceStoreId, destinationStoreId } = req.body;
 
@@ -225,19 +235,32 @@ export const removeConnection = async (req, res) => {
 
   if (!sourceStoreId || !destinationStoreId) {
     logger.warn("Missing sourceStoreId or destinationStoreId in request body.");
-    return res.status(400).json({ error: "Both sourceStoreId and destinationStoreId are required" });
+    return res.status(400).json({
+      error: "Both sourceStoreId and destinationStoreId are required",
+    });
   }
 
   try {
-    logger.info(`Attempting to remove connection between Source Store ID: ${sourceStoreId} and Destination Store ID: ${destinationStoreId}`);
-    const deletedConnection = await deleteConnection(sourceStoreId, destinationStoreId);
+    logger.info(
+      `Attempting to remove connection between Source Store ID: ${sourceStoreId} and Destination Store ID: ${destinationStoreId}`
+    );
+    const deletedConnection = await deleteConnection(
+      sourceStoreId,
+      destinationStoreId
+    );
 
     if (deletedConnection.count === 0) {
-      logger.warn(`No matching connection found to delete for Source Store ID: ${sourceStoreId} and Destination Store ID: ${destinationStoreId}`);
-      return res.status(404).json({ message: "No matching connection found to delete." });
+      logger.warn(
+        `No matching connection found to delete for Source Store ID: ${sourceStoreId} and Destination Store ID: ${destinationStoreId}`
+      );
+      return res
+        .status(404)
+        .json({ message: "No matching connection found to delete." });
     }
 
-    logger.info(`Connection removed successfully between Source Store ID: ${sourceStoreId} and Destination Store ID: ${destinationStoreId}`);
+    logger.info(
+      `Connection removed successfully between Source Store ID: ${sourceStoreId} and Destination Store ID: ${destinationStoreId}`
+    );
     res.status(200).json({ message: "Connection removed." });
   } catch (error) {
     logger.error(`Error in removeConnection: ${error.message}`);

@@ -51,21 +51,21 @@ class productImportModel {
           syncStatus.Remaining + 1,
           jobStates.Inprogress,
           jobMode.sync,
-          0,
-          0
+          syncStatus.TotalMarketPlaces,
+          syncStatus.RemainingMarketPlaces
         );
 
-        if (afterUpdate.Remaining == syncStatus.Total) {
-          await syncInfoUpdate(
-            data.shop,
-            syncStatus.Total,
-            syncStatus.Total,
-            jobStates.Finish,
-            jobMode.sync,
-            0,
-            0
-          );
-        }
+        // if (afterUpdate.Remaining == syncStatus.Total) {
+        //   await syncInfoUpdate(
+        //     data.shop,
+        //     syncStatus.Total,
+        //     syncStatus.Total,
+        //     jobStates.Finish,
+        //     jobMode.sync,
+        //     syncStatus.TotalMarketPlaces,
+        //     syncStatus.RemainingMarketPlaces
+        //   );
+        // }
 
         logger.info(
           `Products Remaining ${afterUpdate.Remaining}/${afterUpdate.Total}`
@@ -142,21 +142,10 @@ class productImportModel {
     product,
     queueData,
     getColumnsToBeSync,
-    session
+    session,
+    destinationStoreName
   ) {
     try {
-      //find connected marketplace with the brand store
-      let connectedStores = await findConnectedDestinationStores(
-        queueData.brandStoreId
-      );
-
-      logger.info(
-        "Products will be sync to following marketplaces: " +
-          JSON.stringify({
-            connectedStores: connectedStores.destinationStore,
-          })
-      );
-
       // Fetch marketplace session from Db by shopName
 
       let BrandStoreSession = await GetSessionByShopName(queueData.shop);
@@ -167,8 +156,7 @@ class productImportModel {
         );
       }
 
-      // logger.info("Brand store session: " + BrandStoreSession.id);
-      // Check if the collection already exists
+ 
 
       //To fetch the further details for the product we call graphql api
       const productDetails = await this.findProductById(
@@ -178,8 +166,10 @@ class productImportModel {
 
       //Fetch the marketplace session from db
       let MarketPlaceStoreSession = await GetSessionByShopName(
-        connectedStores.destinationStore.storeName
+        destinationStoreName
       );
+
+      
 
       if (!MarketPlaceStoreSession) {
         logger.error(
