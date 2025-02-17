@@ -88,12 +88,16 @@ class productController {
       //       pageInfo: data.pageInfo,
       //     })
       // );
+      console.log("hello : ", productStatus)
+
+      let filteredProducts = productStatus === ""
+      ? allProducts: productStatus ? allProducts.filter((product) => product.status === true)
+      : allProducts.filter((product) => product.status === false)
+
+      // console.log({filteredProducts});
 
       return res.status(200).json({
-        data:
-          productStatus != ""
-            ? allProducts.filter((product) => product.status == productStatus)
-            : allProducts,
+        data:filteredProducts,
         Pageinfo: data.pageInfo,
       });
     } catch (error) {

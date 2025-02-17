@@ -195,7 +195,7 @@ const Products = () => {
         setTimeout(() => {
 
           setIsSyncing(false);
-        }, 3000);
+        }, 2000);
 
         shopify.toast.show("Products Imported!");
 

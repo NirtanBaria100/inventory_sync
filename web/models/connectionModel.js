@@ -39,7 +39,7 @@ export const createNewConnection = async (sourceShopId, destinationShopId) => {
 
 // cehcking if any destination store is connected
 export const findConnectedDestinationStores = async (sourceStoreId) => {
-  return await prisma.connection.findFirst({
+  return await prisma.connection.findMany({
     // using find as a source store can have only one destination stores connected
     where: {
       sourceStoreId,
