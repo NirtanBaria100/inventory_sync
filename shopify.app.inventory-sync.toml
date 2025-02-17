@@ -3,7 +3,7 @@
 client_id = "3e416bacdd36ded2b7c6a8faae1dc77c"
 name = "inventory-sync"
 handle = "inventory-sync-70"
-application_url = "https://pharmacology-l-competitive-birmingham.trycloudflare.com"
+application_url = "https://mining-bill-purple-renewable.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "read_inventory,read_locations,read_products,write_inventory,write_prod
 
 [auth]
 redirect_urls = [
-  "https://pharmacology-l-competitive-birmingham.trycloudflare.com/auth/callback",
-  "https://pharmacology-l-competitive-birmingham.trycloudflare.com/auth/shopify/callback",
-  "https://pharmacology-l-competitive-birmingham.trycloudflare.com/api/auth/callback"
+  "https://mining-bill-purple-renewable.trycloudflare.com/auth/callback",
+  "https://mining-bill-purple-renewable.trycloudflare.com/auth/shopify/callback",
+  "https://mining-bill-purple-renewable.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]
