@@ -1,11 +1,11 @@
 import { SearchIcon } from '@shopify/polaris-icons';
 import { React, useState, useCallback, useMemo, useEffect } from 'react';
-import { Link, Page, Text, Divider, Button, Autocomplete, Icon, LegacyCard, DataTable, TextField, Frame, IndexTable, Badge, useBreakpoints, Spinner, } from "@shopify/polaris";
-import ConnectStore from '../components/stores/ConnectStore';
-import DisconnectStore from '../components/stores/DisconnectStore';
+import { Link, Page, Text, Divider, Button, Autocomplete, Icon, LegacyCard, DataTable, TextField, Frame, IndexTable, Badge, useBreakpoints, Spinner, InlineStack, Card, } from "@shopify/polaris";
+import ConnectStore from '../stores/ConnectStore';
+import DisconnectStore from '../stores/DisconnectStore';
 import { useSelector } from "react-redux";
 
-function stores() {
+function Stores() {
 
     const resourceName = {
         singular: 'store',
@@ -51,7 +51,7 @@ function stores() {
 
                 if (response.status === 200) {
                     const data = await response.json();
-                   
+
 
                     if (storeData.type === "source") {
                         setRows(data.destinationStore);
@@ -85,11 +85,19 @@ function stores() {
                     }}
                 >
                     <IndexTable.Cell>
-                        <Text variant="bodyMd" fontWeight="bold" as="span">
+                        <Text variant="bodyMd" as="span">
                             {storeName}
                         </Text>
                     </IndexTable.Cell>
-                    <IndexTable.Cell alignment="start">{status}</IndexTable.Cell>
+                    <IndexTable.Cell alignment="start"><Badge tone='success'>
+                        {status}
+                    </Badge></IndexTable.Cell>
+                    <IndexTable.Cell>
+                        <InlineStack>
+                            <input type="checkbox" checked={true} hidden="hidden" id="username" />
+                            <label class="switch" for="username"></label>
+                        </InlineStack>
+                    </IndexTable.Cell>
                 </IndexTable.Row>
             ));
             setRowMarkup1(newRowMarkup);
@@ -122,7 +130,8 @@ function stores() {
 
     return (
         <Frame>
-            <Page>
+
+            <Card>
                 <div
                     style={{
                         display: "flex",
@@ -131,7 +140,7 @@ function stores() {
                     }}
                 >
                     <div>
-                        <Text variant="headingXl" as="h4">
+                        <Text variant="headingMd" as="h4">
                             Connected Stores
                         </Text>
                     </div>
@@ -139,7 +148,7 @@ function stores() {
                         <Button
                             // disabled={showConnectStore || !connectButtonEnabled}
                             variant="primary"
-                            tone="critical"
+                            tone="success"
                             onClick={handleButtonClick}
                         >
                             Connect new store
@@ -161,6 +170,7 @@ function stores() {
                                         headings={[
                                             { title: 'Store Name' },
                                             { title: 'Status' },
+                                            { title: 'Action' },
                                         ]}
                                         selectable={false}
                                     >
@@ -214,9 +224,10 @@ function stores() {
                         </div>
                     )}
                 </div>
-            </Page>
+            </Card>
         </Frame>
+
     );
 }
 
-export default stores;
+export default Stores;

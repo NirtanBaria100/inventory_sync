@@ -73,7 +73,7 @@ export default function App() {
             <Link to="/" rel="home" />
               <>
                 {/* <Link to="/settings">Settings</Link> */}
-                <Link to="/stores">Connected Stores</Link>
+                {/* <Link to="/stores">Connected Stores</Link>   */}
                 <Link to="/products">Product Sync</Link>
               </>
           </NavMenu>

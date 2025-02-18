@@ -26,6 +26,7 @@ class productController {
         startCursor,
         event,
         productStatus,
+        Tags,
       } = req.body;
 
       // const allProducts = [];
@@ -40,6 +41,23 @@ class productController {
       if (searchQuery !== "" && FilterCriteria !== "")
         filterQuery = `title:${searchQuery}* AND vendor:${FilterCriteria}`;
 
+      if (Tags.length > 0) {
+        // Ensure Tags is not empty
+        filterQuery = "tag:"; // Initialize correctly
+
+        Tags.forEach((tag, index) => {
+          if (index === 0) {
+            filterQuery += `${tag}`; // Append first tag without "OR"
+          } else {
+            filterQuery += ` OR ${tag}`; // Append other tags with "OR"
+          }
+        });
+
+        if (searchQuery !== "") {
+          filterQuery += ` AND title:${searchQuery}`;
+        }
+      }
+
       const variables = {
         first: event == null ? limit : event == "onNext" ? limit : null,
         after: event == "onNext" ? endCursor : null,
@@ -47,11 +65,12 @@ class productController {
         before: event == "onPrev" ? startCursor : null,
       };
 
+     
       if (filterQuery !== "") {
         variables.query = filterQuery;
       }
 
-      // console.log({variables})
+      console.log({variables})
       // logger.debug("GraphQL query variables", { variables });
 
       const headers = {
@@ -76,6 +95,10 @@ class productController {
             id: node.id,
             title: node.title,
             vendor: node.vendor,
+            marketplaces:
+              node?.tags?.filter((tag) => tag.includes(".myshopify.com")) || [],
+            createdAt: node?.createdAt,
+            updatedAt: node?.updatedAt,
             status: IsExistAlready?.data?.Status || false,
           };
         })
@@ -88,16 +111,18 @@ class productController {
       //       pageInfo: data.pageInfo,
       //     })
       // );
-      console.log("hello : ", productStatus)
 
-      let filteredProducts = productStatus === ""
-      ? allProducts: productStatus ? allProducts.filter((product) => product.status === true)
-      : allProducts.filter((product) => product.status === false)
+      let filteredProducts =
+        productStatus === ""
+          ? allProducts
+          : productStatus
+          ? allProducts.filter((product) => product.status === true)
+          : allProducts.filter((product) => product.status === false);
 
       // console.log({filteredProducts});
 
       return res.status(200).json({
-        data:filteredProducts,
+        data: filteredProducts,
         Pageinfo: data.pageInfo,
       });
     } catch (error) {
@@ -325,7 +350,7 @@ class productController {
 
       // Fetch the saved column selections from the database
       const columns = await getColumns(shop);
-      console.log({ columns });
+
       // if (!columns) {
       //   return res
       //     .status(500)

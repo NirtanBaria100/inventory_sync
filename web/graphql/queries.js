@@ -6,6 +6,9 @@ export const FetchProductQuery = `
         id
         title
         vendor
+        tags
+        createdAt
+        updatedAt
       }
       cursor
     }

@@ -22,7 +22,6 @@ class ImportedProductsLogsModel {
         ...(Logs?.ProductReferences || []),
       ];
 
-      console.log({ ProductReferences });
 
       ProductReferences.push({
         id: createdProduct.id,

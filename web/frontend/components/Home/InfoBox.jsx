@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text } from '@shopify/polaris';
+import { Badge, BlockStack, InlineStack, Text } from '@shopify/polaris';
 import copyIcon from '../../assets/copyIcon.png';
 
 function InfoBox({ label, value, showCopyButton }) {
@@ -16,62 +16,64 @@ function InfoBox({ label, value, showCopyButton }) {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        flexDirection: "column",
-        borderRadius: "10px",
-        boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
-        width: "45%",
-        backgroundColor: "white",
-        gap: "10px",
-      }}
-    >
-      <Text variant="headingSm" as="h6">
-        {label}
-      </Text>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <Text variant="bodySm" as="p">
-          {value}
-        </Text>
-        {showCopyButton && (
-          <div
-            onClick={handleCopy}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              outline: 'none',
-              width: 'auto',
-              height: '16px',
-              position: 'relative', 
-            }}
-          >
-            {copied ? (
-              <Text
-                variant="bodySm"
-                as="span"
-                style={{
-                  transition: 'transform 0.2s ease',
-                  transform: 'translateX(10px)', 
-                }}
-              >
-                Copied!
-              </Text>
-            ) : (
-              <img
-                src={copyIcon}
-                alt="Copy"
-                style={{ width: '100%', height: '100%' }}
-              />
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+    <>
+
+      <BlockStack gap={"300"}>
+
+        <InlineStack align='space-between'>
+
+          <Text variant="headingMd" as="h6">
+
+
+            {label}
+
+          </Text>
+          {showCopyButton && (
+            <div
+              onClick={handleCopy}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                outline: 'none',
+                width: 'auto',
+                height: '16px',
+                position: 'relative',
+              }}
+            >
+              {copied ? (
+                <Text
+                  variant="bodySm"
+                  as="span"
+                  style={{
+                    transition: 'transform 0.2s ease',
+                    transform: 'translateX(10px)',
+                  }}
+                >
+                  Copied!
+                </Text>
+              ) : (
+                <img
+                  src={copyIcon}
+                  alt="Copy"
+                  style={{ width: '100%', height: '100%' }}
+                />
+              )}
+            </div>
+          )}
+        </InlineStack>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Badge >
+            <Text variant="bodySm" as="p">
+              {value}
+            </Text>
+          </Badge>
+
+        </div>
+      </BlockStack>
+
+    </>
   );
 }
 

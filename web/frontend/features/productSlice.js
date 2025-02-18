@@ -7,6 +7,7 @@ const initialState = {
     searchQuery: "",
     FilterCriteria: "",
     productStatus:"",
+    Tags:[]
   },
   vendors: [],
   startCursor: "",

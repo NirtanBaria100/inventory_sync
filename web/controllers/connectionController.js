@@ -105,8 +105,6 @@ export const connectedDestinationStores = async (req, res) => {
       });
     }
 
-    console.log({ existingConnection });
-
     // Filtering the response for the frontend
     const result = existingConnection.map((item) => ({
       id: item.destinationStore.id,

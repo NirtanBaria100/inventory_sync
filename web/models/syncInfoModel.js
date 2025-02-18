@@ -10,7 +10,7 @@ export async function syncInfoCreate(
   TotalMarketPlaces,
   RemainingMarketPlaces
 ) {
-  console.log({ shop });
+  
   try {
     await prisma.syncStatus.upsert({
       where: {

@@ -10,7 +10,7 @@ import {
 
 export async function getbatchProducts(page, Query) {
   const URL = `/api/products/batch`;
-  console.log(Query);
+  console.log({Query})
   const payload = {
     FilterCriteria: Query?.FilterCriteria,
     productStatus:
@@ -20,11 +20,14 @@ export async function getbatchProducts(page, Query) {
         ? false
         : "",
     searchQuery: Query?.searchQuery,
+    Tags: ['siar-testing-store.myshopify.com'],
     page: page,
     endCursor: Query?.endCursor,
     startCursor: Query?.startCursor,
     event: Query?.event,
   };
+
+
 
   try {
     const response = await fetch(URL, {
@@ -40,7 +43,7 @@ export async function getbatchProducts(page, Query) {
     }
 
     const data = await response.json();
-    console.log("Fetched batch products:", { data });
+    // console.log("Fetched batch products:", { data });
     return data; // Assuming the endpoint returns a valid JSON response
   } catch (error) {
     console.error("Error fetching batch products:", error, { payload });
@@ -64,8 +67,6 @@ export const handleOnNextEvent = async (
   endCursor,
   Query
 ) => {
-  console.log("working");
-
   dispatch(setLoading(true));
   let page = 1;
   let response = await getbatchProducts(page, {
@@ -75,7 +76,7 @@ export const handleOnNextEvent = async (
     event: "onNext",
   });
   let pageInfo = response.Pageinfo;
-  console.log({ pageInfo });
+
   dispatch(setHasNextPage(pageInfo.hasNextPage));
   dispatch(setHasPreviousPage(pageInfo.hasPreviousPage));
   dispatch(setStartCursor(pageInfo.startCursor));
@@ -166,7 +167,7 @@ export const handleSyncProducts = async (
 
     const result = await response.json();
 
-    console.log("Response", response.ok);
+    // console.log("Response", response.ok);/
 
     if (response.ok) {
       // Update product status in the store

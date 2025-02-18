@@ -7,6 +7,7 @@ import {
   Checkbox,
   Collapsible,
   Divider,
+  Grid,
   InlineGrid,
   InlineStack,
   Layout,
@@ -35,19 +36,23 @@ import FiltersOptions from '../components/product/FiltersOptions';
 import Table from '../components/product/Table';
 import { jobStates } from '../utils/jobStates';
 import '../assets/css/productPage.css';
-import { productTableHeadings } from '../utils/productTableHeadings';
+import { productTableHeadingsDestination, productTableHeadingsSource } from '../utils/productTableHeadings';
 import { jobMode } from '../utils/jobMode';
+import { STORETYPE } from '../utils/storeType';
 
 const Products = () => {
   const dispatch = useDispatch();
-  const { Query, loading, vendors, value: productList } = useSelector((state) => state.products);
+  let { Query, loading, vendors, value: productList } = useSelector((state) => state.products);
   const [isSyncing, setIsSyncing] = useState(false);
   const [open, setOpen] = useState(false);
   const [isFetchingColumnSettings, setIsFetchingColumnSettings] = useState(false);
   const IntervalTimeDuration = 10000;
-
+  const storeData = useSelector((state) => state.data);
   // Use a ref to store the interval ID
   const intervalRef = useRef(null);
+
+  //Depending on the type of store it will display the heading in the table
+  let productTableHeadings = storeData.type == STORETYPE.destination ? productTableHeadingsDestination : productTableHeadingsSource
 
   const initialState = {
     Title: false,
@@ -163,8 +168,6 @@ const Products = () => {
     TotalMarketPlaces: '', RemainingMarketPlaces: ''
   });
 
-
-
   // Fetch sync progress data
   const updateProgressBar = useCallback(async () => {
     const response = await fetch('/api/products/sync-info');
@@ -231,7 +234,10 @@ const Products = () => {
       dispatch(setLoading(false));
     };
 
-    fetchData();
+    if (storeData.type === STORETYPE.source) {
+      fetchData();
+    }
+
   }, []);
 
   // Polling for sync updates
@@ -273,7 +279,11 @@ const Products = () => {
   // Search handler
   const handleSearchQuery = async () => {
     dispatch(setLoading(true));
+
+    // dispatch(setQuery({ ...Query, Tags: ['siar-testing-store.myshopify.com'] }));
+
     const response = await getbatchProducts(0, Query);
+    console.log({ response })
     dispatch(setProducts(response.data));
     dispatch(setLoading(false));
   };
@@ -282,19 +292,24 @@ const Products = () => {
 
   // This useEffect is implemented for update sync info on first load
   useEffect(() => {
-    (async () => {
-      const response = await fetch('/api/products/sync-info');
-      const data = await response.json();
+    if (storeData.type === STORETYPE.source) {
 
-      if (response.ok && data?.data) {
-        if (data.data.State !== jobStates.Finish) {
-          setIsSyncing(true);
 
+      (async () => {
+        const response = await fetch('/api/products/sync-info');
+        const data = await response.json();
+
+        if (response.ok && data?.data) {
+          if (data.data.State !== jobStates.Finish) {
+            setIsSyncing(true);
+
+          }
+        } else {
+          setIsSyncing(false);
         }
-      } else {
-        setIsSyncing(false);
-      }
-    })()
+      })()
+
+    }
   }, [])
 
   // Set the initial state of the column selection from database
@@ -334,158 +349,220 @@ const Products = () => {
   return (
     <Page>
       <div className='header'>
-        <Text variant="headingXl" as="h4">Product Synchronization</Text>
-        <Text variant='bodySm'>Synchronization will import products to your selected marketplace.</Text>
+        <Text variant="headingXl" as="h4">{storeData.type == STORETYPE.source ? "Product Synchronization" : "Imported Products"}</Text>
+        <Text variant='bodySm'>{storeData.type == STORETYPE.source ? "Synchronization will import products to your selected marketplace." :"Products which are imported from other brands to this store."}</Text>
       </div>
       <div style={{ marginBlock: "20px" }}>
         <Divider borderColor="border-inverse" />
       </div>
 
-      {(isSyncing && syncInfo.mode == jobMode.sync) && (
-        <div style={{ marginBlock: "20px" }}>
-          <Banner
-            title={<strong>Syncing Status: <Badge tone={syncInfo.State === jobStates.Inprogress ? 'info' : syncInfo.State === jobStates.Finish ? 'success' : syncInfo.State === jobStates.Inqueue && 'enabled'}>
-              {syncInfo.State}
-            </Badge></strong>}
-            tone="success"
-          >
-            <BlockStack gap={"200"}>
-              <Text variant='headingSm'>Importing Products to Marketplace</Text>
-              <ProgressBar progress={syncInfo.Percentage} animated size='medium' />
-              <span>Marketplaces {syncInfo.RemainingMarketPlaces}/{syncInfo.TotalMarketPlaces}</span>
-              <span>Products {syncInfo.Remaining}/{syncInfo.Total}</span>
-            </BlockStack>
-          </Banner>
-        </div>
-      )}
+
+      {storeData.type === STORETYPE.source && <>
+        {(isSyncing && syncInfo.mode == jobMode.sync) && (
+          <div style={{ marginBlock: "20px" }}>
+            <Banner
+              title={<strong>Syncing Status: <Badge tone={syncInfo.State === jobStates.Inprogress ? 'info' : syncInfo.State === jobStates.Finish ? 'success' : syncInfo.State === jobStates.Inqueue && 'enabled'}>
+                {syncInfo.State}
+              </Badge></strong>}
+              tone="success"
+            >
+              <BlockStack gap={"200"}>
+                <Text variant='headingSm'>Importing Products to Marketplace</Text>
+                <ProgressBar progress={syncInfo.Percentage} animated size='medium' />
+                <span>Marketplaces {syncInfo.RemainingMarketPlaces}/{syncInfo.TotalMarketPlaces}</span>
+                <span>Products {syncInfo.Remaining}/{syncInfo.Total}</span>
+              </BlockStack>
+            </Banner>
+          </div>
+        )}
 
 
-      {(isSyncing && syncInfo.mode == jobMode.unSync) && (
-        <div style={{ marginBlock: "20px" }}>
-          <Banner
-            title={<strong>Un-sync Status: <Badge tone={syncInfo.State === jobStates.Inprogress ? 'info' : syncInfo.State === jobStates.Finish ? 'success' : syncInfo.State === jobStates.Inqueue && 'enabled'}>
-              {syncInfo.State}
-            </Badge></strong>}
-            tone="info"
-          >
-            <BlockStack gap={"200"}>
-              <Text variant='headingSm'>Bulk delete job process {syncInfo.State}</Text>
-              <ProgressBar progress={syncInfo.Percentage} animated size='medium' />
-              <span>Marketplaces {syncInfo.RemainingMarketPlaces}/{syncInfo.TotalMarketPlaces}</span>
-              <span>Products {syncInfo.Remaining}/{syncInfo.Total}</span>
-            </BlockStack>
-          </Banner>
-        </div>
-      )}
+        {(isSyncing && syncInfo.mode == jobMode.unSync) && (
+          <div style={{ marginBlock: "20px" }}>
+            <Banner
+              title={<strong>Un-sync Status: <Badge tone={syncInfo.State === jobStates.Inprogress ? 'info' : syncInfo.State === jobStates.Finish ? 'success' : syncInfo.State === jobStates.Inqueue && 'enabled'}>
+                {syncInfo.State}
+              </Badge></strong>}
+              tone="info"
+            >
+              <BlockStack gap={"200"}>
+                <Text variant='headingSm'>Bulk delete job process {syncInfo.State}</Text>
+                <ProgressBar progress={syncInfo.Percentage} animated size='medium' />
+                <span>Marketplaces {syncInfo.RemainingMarketPlaces}/{syncInfo.TotalMarketPlaces}</span>
+                <span>Products {syncInfo.Remaining}/{syncInfo.Total}</span>
+              </BlockStack>
+            </Banner>
+          </div>
+        )}
+
+      </>}
+
 
       <Card>
-        <div style={{ marginBottom: "10px" }}>
+        {storeData.type === STORETYPE.source && <>
+          <div style={{ marginBottom: "10px" }}>
 
-          <Layout columns={2}>
-            <Layout.Section variant='oneHalf'>
+            <Layout columns={2}>
+              <Layout.Section variant='oneHalf'>
 
-              <TextField
-                placeholder="Search Products"
-                value={Query.searchQuery}
-                onChange={(value) => dispatch(setQuery({ ...Query, searchQuery: value }))}
-              />
-            </Layout.Section>
-            <Layout.Section variant='oneThird'>
-
-              <InlineGrid columns={2} gap="100">
-                <FiltersOptions data={vendors} />
+                <TextField
+                  placeholder="Search Product Title"
+                  value={Query.searchQuery}
+                  onChange={(value) => dispatch(setQuery({ ...Query, searchQuery: value }))}
+                />
+              </Layout.Section>
+              <Layout.Section variant='oneThird'>
 
                 <InlineGrid columns={2} gap="100">
-                  <Button
-                    variant='primary'
-                    loading={loading}
-                    onClick={handleSearchQuery}
-                    icon={SearchIcon}
-                  >
 
-                  </Button>
-                  <Button
-                    ariaDescribedBy='Select Columns'
-                    onClick={handleToggle}
-                    ariaExpanded={open}
-                    ariaControls="basic-collapsible"
-                    icon={SettingsIcon}
-                  >
+                  <FiltersOptions data={vendors} />
 
-                  </Button>
 
+                  <InlineGrid columns={2} gap="100">
+                    <Button
+                      variant='primary'
+                      loading={loading}
+                      onClick={handleSearchQuery}
+                      icon={SearchIcon}
+                    >
+
+                    </Button>
+
+
+                    {storeData.type === STORETYPE.source && <>
+                      <Button
+                        ariaDescribedBy='Select Columns'
+                        onClick={handleToggle}
+                        ariaExpanded={open}
+                        ariaControls="basic-collapsible"
+                        icon={SettingsIcon}
+                      >
+
+                      </Button>
+                    </>}
+
+                  </InlineGrid>
                 </InlineGrid>
-              </InlineGrid>
-            </Layout.Section>
-          </Layout>
+              </Layout.Section>
+            </Layout>
+
+          </div>
+        </>}
 
 
-        </div>
-        <div style={{ marginBlock: "20px" }}>
-          {/* <Card > */}
-          <BlockStack >
-            <Divider borderWidth='025'></Divider>
-            <Collapsible
-              open={open}
-              id="basic-collapsible"
-              transition={{ duration: '500ms', timingFunction: 'ease-in-out' }}
-              expandOnPrint
+        {storeData.type == STORETYPE.destination &&
+          <div style={{ marginBottom: "10px" }}>
 
-            >
-              <div style={{ marginTop: "30px" }}>
-
-                <InlineStack gap={"100"} align='end'>
-                  <Button variant='secondary' disabled={isFetchingColumnSettings} onClick={handleToggle}>Cancel</Button>
-                  <Button variant='primary' loading={isFetchingColumnSettings} onClick={handleSaveColumns}>Save</Button>
-                </InlineStack>
-                <InlineGrid columns={2}>
-                  <BlockStack gap="200">
-                    <Text variant="headingMd">Variant Properties</Text>
-                    <Checkbox
-                      label="Select All"
-                      checked={selectAllVariants}
-                      onChange={() => handleSelectAll(variantKeys, selectAllVariants, setSelectAllVariants)}
-                    />
-                    {variantKeys.map((key, index) => (
-                      <Checkbox key={index} label={key} checked={columnSelection[key]} onChange={() => handleCheckboxChange(key)} />
-                    ))}
-                  </BlockStack>
-
-                  <BlockStack gap="200">
-                    <Text variant="headingMd">Product Properties</Text>
-                    <Checkbox
-                      label="Select All"
-                      checked={selectAllProducts}
-                      onChange={() => handleSelectAll(productKeys, selectAllProducts, setSelectAllProducts)}
-                    />
-                    {productKeys.map((key, index) => (
-                      <Checkbox key={index} label={key} checked={columnSelection[key]} onChange={() => handleCheckboxChange(key)} />
-                    ))}
-                  </BlockStack>
+            <Grid columns={{ lg: 3, md: 3, sm: 3 }} areas={{ lg: ['search search search search search button'], md: ['search search search search search button'], sm: ['search search search search search button'], xs: ['search search search search search button'] }}>
 
 
-                </InlineGrid>
-              </div>
-            </Collapsible>
+              <Grid.Cell area="search">
 
-          </BlockStack>
-          {/* </Card> */}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "end", gap: "20px", marginBlock: "10px" }}>
-          <Text variant='bodyLg'>Filter:</Text>
-          <Select options={[
-            { label: "All", value: "" },
-            { label: "Sync", value: "true" },
-            { label: "UnSync", value: "false" }
+                <TextField
+                  placeholder="Search Product Title"
+                  value={Query.searchQuery}
+                  onChange={(value) => dispatch(setQuery({ ...Query, searchQuery: value }))}
+                />
+              </Grid.Cell>
 
-          ]}
-            disabled={loading}
-            onChange={(value) => dispatch(setQuery({ ...Query, productStatus: value }))}
-            value={Query.productStatus}
+              <Grid.Cell area="button">
 
-          />
+                <Button
+                  variant='primary'
+                  loading={loading}
+                  onClick={handleSearchQuery}
+                  icon={SearchIcon}
+                >
 
-        </div>
+                </Button>
+              </Grid.Cell>
+
+
+            </Grid>
+
+
+          </div>
+
+        }
+
+
+
+        {storeData.type === STORETYPE.source && <>
+          <div style={{ marginBlock: "20px" }}>
+            {/* <Card > */}
+            <BlockStack >
+              <Divider borderWidth='025'></Divider>
+              <Collapsible
+                open={open}
+                id="basic-collapsible"
+                transition={{ duration: '500ms', timingFunction: 'ease-in-out' }}
+                expandOnPrint
+
+              >
+                <div style={{ marginTop: "30px" }}>
+
+                  <InlineStack gap={"100"} align='end'>
+                    <Button variant='secondary' disabled={isFetchingColumnSettings} onClick={handleToggle}>Cancel</Button>
+                    <Button variant='primary' loading={isFetchingColumnSettings} onClick={handleSaveColumns}>Save</Button>
+                  </InlineStack>
+                  <InlineGrid columns={2}>
+                    <BlockStack gap="200">
+                      <Text variant="headingMd">Variant Properties</Text>
+                      <Checkbox
+                        label="Select All"
+                        checked={selectAllVariants}
+                        onChange={() => handleSelectAll(variantKeys, selectAllVariants, setSelectAllVariants)}
+                      />
+                      {variantKeys.map((key, index) => (
+                        <Checkbox key={index} label={key} checked={columnSelection[key]} onChange={() => handleCheckboxChange(key)} />
+                      ))}
+                    </BlockStack>
+
+                    <BlockStack gap="200">
+                      <Text variant="headingMd">Product Properties</Text>
+                      <Checkbox
+                        label="Select All"
+                        checked={selectAllProducts}
+                        onChange={() => handleSelectAll(productKeys, selectAllProducts, setSelectAllProducts)}
+                      />
+                      {productKeys.map((key, index) => (
+                        <Checkbox key={index} label={key} checked={columnSelection[key]} onChange={() => handleCheckboxChange(key)} />
+                      ))}
+                    </BlockStack>
+
+
+                  </InlineGrid>
+                </div>
+              </Collapsible>
+
+            </BlockStack>
+            {/* </Card> */}
+          </div>
+        </>}
+
+
+        {storeData.type === STORETYPE.source && <>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "end", gap: "20px", marginBlock: "10px" }}>
+
+
+
+            <Text variant='bodyLg'>Filter:</Text>
+            <Select options={[
+              { label: "All", value: "" },
+              { label: "Sync", value: "true" },
+              { label: "UnSync", value: "false" }
+
+            ]}
+              disabled={loading}
+              onChange={(value) => dispatch(setQuery({ ...Query, productStatus: value }))}
+              value={Query.productStatus}
+
+            />
+
+
+          </div>
+        </>
+        }
         <Table setIsSyncing={setIsSyncing} IsSyncing={isSyncing} TableData={productList} columnSelection={columnSelection} Headings={productTableHeadings} handleToggle={handleToggle} />
       </Card>
     </Page >

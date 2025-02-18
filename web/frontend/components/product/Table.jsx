@@ -8,13 +8,15 @@ import {
     Button,
     Icon,
     InlineStack,
+    BlockStack,
 } from '@shopify/polaris';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { handleSyncProducts, handleOnNextEvent, handleOnPrevEvent, handleUnSyncProducts } from './helper/functions';
 import { PlusCircleIcon, DeleteIcon } from '@shopify/polaris-icons';
+import { STORETYPE } from '../../utils/storeType';
 
-export default function Table({ setIsSyncing, IsSyncing, TableData,columnSelection, Headings,handleToggle }) {
+export default function Table({ setIsSyncing, IsSyncing, TableData, columnSelection, Headings, handleToggle }) {
     const { Query, loading, hasNextPage, hasPreviousPage, startCursor, endCursor, value } = useSelector(state => state.products);
     // const [syncLoader, setSyncLoader] = useState(false);
     const dispatch = useDispatch();
@@ -62,7 +64,7 @@ export default function Table({ setIsSyncing, IsSyncing, TableData,columnSelecti
                     content: 'Sync',
                     icon: PlusCircleIcon,
                     disabled: IsSyncing,
-                    onAction: () => handleSyncProducts(selectedResources, value, setIsSyncing, IsSyncing, storeData.id, dispatch,columnSelection,handleToggle),
+                    onAction: () => handleSyncProducts(selectedResources, value, setIsSyncing, IsSyncing, storeData.id, dispatch, columnSelection, handleToggle),
                 }
             ]);
         }
@@ -71,7 +73,7 @@ export default function Table({ setIsSyncing, IsSyncing, TableData,columnSelecti
 
     const rowMarkup = Data.map(
         (
-            { id, title, vendor, status },
+            { id, title, vendor, status, marketplaces, createdAt, updatedAt },
             index,
         ) => (
             <IndexTable.Row
@@ -87,8 +89,31 @@ export default function Table({ setIsSyncing, IsSyncing, TableData,columnSelecti
                     </Text>
                 </IndexTable.Cell>
                 <IndexTable.Cell>{title}</IndexTable.Cell>
-                <IndexTable.Cell>{vendor}</IndexTable.Cell>
-                <IndexTable.Cell><InlineStack><Badge tone={status ? 'success' : "info-strong"}>  {status ? "Synced" : "Not synced"}</Badge></InlineStack></IndexTable.Cell>
+                <IndexTable.Cell>
+                    <InlineStack gap={"200"}> 
+                        {storeData.type == STORETYPE.destination ?
+                            marketplaces.map(marketplace => <>
+                                <Badge tone='info'>
+                                    {marketplace}
+                                </Badge>
+                            </>)
+                            : vendor}
+                    </InlineStack>
+                </IndexTable.Cell>
+                {storeData.type == STORETYPE.source &&
+                    <IndexTable.Cell>
+                        <InlineStack>
+                            <Badge tone={status ? 'success' : "info-strong"}>  {status ? "Synced" : "Not synced"}</Badge>
+                        </InlineStack>
+                    </IndexTable.Cell>
+                }
+                {storeData.type == STORETYPE.destination &&
+
+                    <>
+                        <IndexTable.Cell>{createdAt}</IndexTable.Cell>
+                        <IndexTable.Cell>{updatedAt}</IndexTable.Cell>
+                    </>
+                }
             </IndexTable.Row>
         ),
     );
@@ -96,10 +121,11 @@ export default function Table({ setIsSyncing, IsSyncing, TableData,columnSelecti
     return (
         <LegacyCard>
             <IndexTable
-            
+
                 loading={loading}
                 condensed={useBreakpoints().smDown}
                 resourceName={resourceName}
+                selectable={storeData.type == STORETYPE.destination ? false : true}
                 itemCount={Data.length}
                 selectedItemsCount={
                     allResourcesSelected ? 'All' : selectedResources.length
