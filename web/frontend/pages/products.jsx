@@ -11,7 +11,6 @@ import {
   InlineGrid,
   InlineStack,
   Layout,
-  Link,
   Page,
   ProgressBar,
   Select,
@@ -19,7 +18,7 @@ import {
   TextField
 } from '@shopify/polaris';
 import React, { useEffect, useState, useCallback, useRef } from 'react'; // Added useRef
-import { ArrowDownIcon, PageDownIcon, SearchIcon, SettingsIcon } from '@shopify/polaris-icons';
+import { SearchIcon, SettingsIcon } from '@shopify/polaris-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { getbatchProducts } from '../components/product/helper/functions';
 import {
@@ -46,8 +45,10 @@ const Products = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [open, setOpen] = useState(false);
   const [isFetchingColumnSettings, setIsFetchingColumnSettings] = useState(false);
+  const [marketplace, setMarketplace] = useState("");
   const IntervalTimeDuration = 10000;
   const storeData = useSelector((state) => state.data);
+  const [marketPlaces, setMarketplaces] = useState([]);
   // Use a ref to store the interval ID
   const intervalRef = useRef(null);
 
@@ -223,7 +224,11 @@ const Products = () => {
       dispatch(setVendors(vendorData.vendors));
 
       const page = 1;
-      const response = await getbatchProducts(page, Query);
+      let shopNames = await getStoreDetails();
+      setMarketplaces(shopNames);
+
+
+      const response = await getbatchProducts(0, Query, marketplace != "" ? [marketplace] : []);
       const { Pageinfo, data } = response;
 
       dispatch(setHasNextPage(Pageinfo.hasNextPage));
@@ -279,14 +284,60 @@ const Products = () => {
   // Search handler
   const handleSearchQuery = async () => {
     dispatch(setLoading(true));
+    let shopNames = await getStoreDetails();
+    setMarketplaces(shopNames);
 
-    // dispatch(setQuery({ ...Query, Tags: ['siar-testing-store.myshopify.com'] }));
+    console.log(marketplace)
 
-    const response = await getbatchProducts(0, Query);
-    console.log({ response })
+    const response = await getbatchProducts(0, Query, marketplace != "" ? [marketplace] : []);
     dispatch(setProducts(response.data));
     dispatch(setLoading(false));
   };
+
+
+  async function getStoreDetails() {
+
+
+    if (!storeData.intialLoading) { // Ensure data is fetched in app.jsx
+      let url;
+      if (storeData.type === STORETYPE.source) {
+        url = "/api/connection/connectedDestinationStores"; // Source store fetching destination stores
+      } else if (storeData.type === STORETYPE.destination) {
+        url = "/api/connection/connectedSourceStores"; // Destination store fetching source stores
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: storeData.id }),
+        });
+
+        if (response.status === 200) {
+          const data = await response.json();
+          let storeNames = [];
+
+          if (storeData.type === STORETYPE.source) {
+            storeNames = data?.destinationStore.map(store => store.storeName);
+          } else if (storeData.type === STORETYPE.destination) {
+            storeNames = data?.sourceStore.map(store => store.storeName);
+          }
+
+          return storeNames;
+        }
+
+
+        else if (response.status === 404) {
+          return null;
+        }
+
+
+      } catch (error) {
+        console.error('Error during API call:', error);
+
+      }
+    }
+  }
 
 
 
@@ -341,16 +392,24 @@ const Products = () => {
   }, []);
 
 
-  // Trigger search when productStatus changes
+  // Trigger search when productStatus changes or markplace
   useEffect(() => {
     handleSearchQuery();
   }, [Query.productStatus]); // Runs every time productStatus changes
+
+
+  // useEffect(() => {
+  //   handleSearchQuery();
+  // }, [marketplace]); // Runs every time productStatus changes
+
+
+  const handleMarketplaceChange = useCallback((value) => setMarketplace(prev => value));
 
   return (
     <Page>
       <div className='header'>
         <Text variant="headingXl" as="h4">{storeData.type == STORETYPE.source ? "Product Synchronization" : "Imported Products"}</Text>
-        <Text variant='bodySm'>{storeData.type == STORETYPE.source ? "Synchronization will import products to your selected marketplace." :"Products which are imported from other brands to this store."}</Text>
+        <Text variant='bodySm'>{storeData.type == STORETYPE.source ? "Synchronization will import products to your selected marketplace." : "Products which are imported from other brands to this store."}</Text>
       </div>
       <div style={{ marginBlock: "20px" }}>
         <Divider borderColor="border-inverse" />
@@ -465,6 +524,7 @@ const Products = () => {
                 />
               </Grid.Cell>
 
+
               <Grid.Cell area="button">
 
                 <Button
@@ -562,7 +622,33 @@ const Products = () => {
 
           </div>
         </>
+
+
+
         }
+        {storeData.type === STORETYPE.destination && <>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "end", gap: "20px", marginBlock: "10px" }}>
+
+
+
+            <Text variant='bodyLg'>Filter:</Text>
+            <Select
+              options={marketPlaces.map(marketplace => ({ label: marketplace.replace('.myshopify.com', ""), value: marketplace }))}
+              placeholder={"Select Marketplace"}
+              onChange={handleMarketplaceChange}
+              value={marketplace}
+              disabled={loading}
+            />
+
+
+          </div>
+        </>
+
+
+
+        }
+
+
         <Table setIsSyncing={setIsSyncing} IsSyncing={isSyncing} TableData={productList} columnSelection={columnSelection} Headings={productTableHeadings} handleToggle={handleToggle} />
       </Card>
     </Page >

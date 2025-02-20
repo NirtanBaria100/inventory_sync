@@ -6,7 +6,6 @@ export default function FiltersOptions({ data }) {
     const dispatch = useDispatch();
     const products = useSelector((state) => state.products);
     const { Query } = products;
-
     // Ensure unique keys by combining value and index
     const options = data?.map((item, index) => ({ 
         value: item, 

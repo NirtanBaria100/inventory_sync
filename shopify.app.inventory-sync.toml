@@ -3,7 +3,7 @@
 client_id = "3e416bacdd36ded2b7c6a8faae1dc77c"
 name = "inventory-sync"
 handle = "inventory-sync-70"
-application_url = "https://seafood-johnston-annoying-signal.trycloudflare.com"
+application_url = "https://forgotten-diary-wages-mozambique.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "read_inventory,read_locations,read_products,write_inventory,write_prod
 
 [auth]
 redirect_urls = [
-  "https://seafood-johnston-annoying-signal.trycloudflare.com/auth/callback",
-  "https://seafood-johnston-annoying-signal.trycloudflare.com/auth/shopify/callback",
-  "https://seafood-johnston-annoying-signal.trycloudflare.com/api/auth/callback"
+  "https://forgotten-diary-wages-mozambique.trycloudflare.com/auth/callback",
+  "https://forgotten-diary-wages-mozambique.trycloudflare.com/auth/shopify/callback",
+  "https://forgotten-diary-wages-mozambique.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

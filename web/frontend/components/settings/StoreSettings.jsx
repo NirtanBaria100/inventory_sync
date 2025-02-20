@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Button, Select, Toast, Frame, LegacyCard } from "@shopify/polaris";
 import { useDispatch, useSelector } from "react-redux";
 import { setStartStoreData } from "../../features/dataSlice";
+import { STORETYPE } from '../../utils/storeType';
 
 
 // as of now this component is used to change the type of the store 
@@ -68,15 +69,15 @@ function StoreSettings({ backButton }) {
     };
     
     const options = [
-        { label: 'source', value: 'source' },
-        { label: 'destination', value: 'destination' },
+        { label: 'Source', value: 'source' },
+        { label: 'Destination', value: 'destination' },
     ];
 
     useEffect(() => {
-        if (storeData.type === "source") {
-            setTypeSelected("source");
-        } else if (storeData.type === "destination") {
-            setTypeSelected("destination");
+        if (storeData.type === STORETYPE.source) {
+            setTypeSelected(STORETYPE.source);
+        } else if (storeData.type === STORETYPE.destination) {
+            setTypeSelected(STORETYPE.destination);
         }
     }, [storeData]);
 

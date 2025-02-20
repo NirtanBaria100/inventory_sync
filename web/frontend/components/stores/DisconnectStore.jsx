@@ -8,17 +8,18 @@ import {
     Frame
 } from '@shopify/polaris';
 import { useSelector } from "react-redux";
+import { STORETYPE } from '../../utils/storeType';
 
 // component to dissconnect a store 
-function DisconnectStore({ onButtonClick, onConnectionSuccess , rowId , storeName}) {
+function DisconnectStore({ onButtonClick, onConnectionSuccess, rowId, storeName }) {
 
     const [loading, setLoading] = useState(false);
     const [responseMessage, setResponseMessage] = useState('');
-    const [active, setActive] = useState(false);   
+    const [active, setActive] = useState(false);
 
     const storeData = useSelector((state) => state.data);
 
- 
+
 
     const toggleActive = useCallback(() => setActive((active) => !active), []);
 
@@ -28,12 +29,12 @@ function DisconnectStore({ onButtonClick, onConnectionSuccess , rowId , storeNam
         const apiUrl = '/api/connection/removeConnection';  // api to remove connection
 
         try {
-            if(storeData.type==='source'){  // api need both the source store and destiantion store id
-             var sourceId=storeData.id
-             var destinationId=rowId
-            }else if(storeData.type==='destination'){
-            var sourceId=rowId 
-            var destinationId=storeData.id
+            if (storeData.type === STORETYPE.source) {  // api need both the source store and destiantion store id
+                var sourceId = storeData.id
+                var destinationId = rowId
+            } else if (storeData.type === STORETYPE.destination) {
+                var sourceId = rowId
+                var destinationId = storeData.id
             }
 
             const response = await fetch(apiUrl, {
@@ -44,33 +45,33 @@ function DisconnectStore({ onButtonClick, onConnectionSuccess , rowId , storeNam
                 body: JSON.stringify({
                     sourceStoreId: parseInt(sourceId, 10),
                     destinationStoreId: parseInt(destinationId, 10),
-                  }),
+                }),
             });
 
             const data = await response.json();
 
             if (response.status === 400) {
                 throw new Error(data.error);
-              } else if (!response.ok) {
+            } else if (!response.ok) {
                 throw new Error('An error occurred, Please try again later');
-              }
-        
-              console.log('Connection removed', data);
-              setResponseMessage(data.message);
-        
-              setTimeout(() => {
-                onConnectionSuccess();  // this function is called from the parent and it closes this component and reloads the store component
-              }, 2000);                // set timeout so that the user can see the toast message and then it automatically reloads. 
-            } catch (error) {
-              console.error('Error during API call:', error);
-              setResponseMessage(`${error.message}`);
-              setTimeout(() => {
-                onConnectionSuccess();   //calling this so it reloads 
-              }, 1000);
-            } finally {
-              setLoading(false);
-              setActive(true);
             }
+
+            console.log('Connection removed', data);
+            setResponseMessage(data.message);
+
+            setTimeout(() => {
+                onConnectionSuccess();  // this function is called from the parent and it closes this component and reloads the store component
+            }, 2000);                // set timeout so that the user can see the toast message and then it automatically reloads. 
+        } catch (error) {
+            console.error('Error during API call:', error);
+            setResponseMessage(`${error.message}`);
+            setTimeout(() => {
+                onConnectionSuccess();   //calling this so it reloads 
+            }, 1000);
+        } finally {
+            setLoading(false);
+            setActive(true);
+        }
     };
 
 
@@ -101,7 +102,7 @@ function DisconnectStore({ onButtonClick, onConnectionSuccess , rowId , storeNam
                 >
                     cancel
                 </Button>
-                
+
                 <Button
                     disabled={loading}
                     variant="primary"

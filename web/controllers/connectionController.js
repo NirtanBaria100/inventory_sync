@@ -1,4 +1,5 @@
 import logger from "../config/logger.js";
+import { STORETYPE } from "../frontend/utils/storeType.js";
 import {
   checkSourceShop,
   checkDestinationShop,
@@ -29,7 +30,8 @@ export const createConnection = async (req, res) => {
   try {
     // Check if the shop making the request is a "source" store
     const sourceShop = await checkSourceShop(shop);
-    if (!sourceShop || sourceShop.type !== "source") {
+    console.log({sourceShop});
+    if (!sourceShop || sourceShop.type !== STORETYPE.source) {
       logger.warn(`Shop ${shop} is not a source store or not found.`);
       return res.status(400).send({ error: "Not a source store." });
     }
@@ -42,7 +44,7 @@ export const createConnection = async (req, res) => {
     if (!destinationShop) {
       logger.warn(`Invalid key provided by shop: ${shop}`);
       return res.status(400).send({ error: "Invalid key" });
-    } else if (destinationShop.type !== "destination") {
+    } else if (destinationShop.type !== STORETYPE.destination) {
       logger.warn(`Store with key ${key} is not a destination store.`);
       return res
         .status(400)
@@ -171,7 +173,7 @@ export const changeStoreType = async (req, res) => {
 
     logger.info(`Received request to change store type for shop: ${shop}`);
 
-    if (!type || (type !== "source" && type !== "destination")) {
+    if (!type || (type !== "source" && type !== STORETYPE.destination)) {
       logger.warn("Missing or invalid type in request body.");
       return res.status(400).json({ error: "Missing or invalid type" });
     }
@@ -186,7 +188,7 @@ export const changeStoreType = async (req, res) => {
     const { id: storeId, type: storeType } = storeData;
     logger.info(`Store found. ID: ${storeId}, Current Type: ${storeType}`);
 
-    if (storeType === "source") {
+    if (storeType === STORETYPE.source) {
       const connectionData = await findConnectionBySourceId(storeId); // if connections exist then we can't change type of store until removed
 
       if (connectionData) {
@@ -198,7 +200,7 @@ export const changeStoreType = async (req, res) => {
             "Cannot change store type. Store has active connections. Please remove them from the stores tab first.",
         });
       }
-    } else if (storeType === "destination") {
+    } else if (storeType === STORETYPE.destination) {
       const connectionData = await findConnectionByDestinationId(storeId); // if connections exist then we can't change type of store until removed
 
       if (connectionData) {

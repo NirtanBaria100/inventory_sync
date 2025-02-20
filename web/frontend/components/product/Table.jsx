@@ -94,7 +94,7 @@ export default function Table({ setIsSyncing, IsSyncing, TableData, columnSelect
                         {storeData.type == STORETYPE.destination ?
                             marketplaces.map(marketplace => <>
                                 <Badge tone='info'>
-                                    {marketplace}
+                                    {marketplace.replace(".myshopify.com","")}
                                 </Badge>
                             </>)
                             : vendor}

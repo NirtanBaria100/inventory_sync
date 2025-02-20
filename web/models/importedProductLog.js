@@ -9,30 +9,29 @@ class ImportedProductsLogsModel {
     shop
   ) {
     try {
-      let ProductReferences = [];
 
       let Logs = await prisma.importedProductLog.findFirst({
         where: { ProductId: product_id, ShopName: shop.ShopName },
-        select: { ProductReferences: true },
+        select: { LogID: true, ProductReferences: true },
       });
 
       // Properly concatenating existing references
-      ProductReferences = [
-        ...ProductReferences,
-        ...(Logs?.ProductReferences || []),
-      ];
+      // ProductReferences = [
+      //   ...ProductReferences,
+      //   ...(Logs?.ProductReferences || []),
+      // ];
 
-
-      ProductReferences.push({
-        id: createdProduct.id,
-        marketplace: MarketPlaceStoreSession.shop,
-      });
-
+   
       await prisma.importedProductLog.update({
         where: { ProductId: product_id },
         data: {
           Status: value,
-          ProductReferences: ProductReferences,
+          ProductReferences: {
+            create: {
+              product_id: createdProduct.id,
+              Marketplace: MarketPlaceStoreSession.shop,
+            },
+          },
         },
       });
 
@@ -42,7 +41,6 @@ class ImportedProductsLogsModel {
       throw new Error(error);
     }
   }
-
   static async findManyLogs(ids, shop) {
     return await prisma.importedProductLog.findMany({
       where: {
@@ -73,12 +71,23 @@ class ImportedProductsLogsModel {
       },
     });
   }
-
   static async deleteMany(id, brand) {
     await prisma.importedProductLog.delete({
       where: {
         ProductId: id,
         ShopName: brand,
+      },
+    });
+  }
+  static async RetrieveProductsByBrandName(brand,Marketplace) {
+    return await prisma.importedProductLog.count({
+      where: {
+        ShopName: brand,
+        ProductReferences:{
+            every:{
+              Marketplace:Marketplace
+            }
+        }
       },
     });
   }

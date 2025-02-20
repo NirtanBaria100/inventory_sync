@@ -82,3 +82,15 @@ export const publishUpdateMutation = `mutation publicationUpdate($id: ID!, $inpu
           }
         }
       }`;
+
+export const ProductDeleteMutation = `
+mutation productDelete($id: ID!) {
+  productDelete(input: { id: $id }) {
+    deletedProductId
+    userErrors {
+      field
+      message
+    }
+  }
+}
+`;

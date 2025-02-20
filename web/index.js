@@ -63,21 +63,21 @@ app.use(express.json());
 app.use("/api/shop", storeRoutes);
 app.use("/api/connection", connectionRoutes);
 
-app.get("/api/products/count", async (_req, res) => {
-  const client = new shopify.api.clients.Graphql({
-    session: res.locals.shopify.session,
-  });
+// app.get("/api/products/count", async (_req, res) => {
+//   const client = new shopify.api.clients.Graphql({
+//     session: res.locals.shopify.session,
+//   });
 
-  const countData = await client.request(`
-    query shopifyProductCount {
-      productsCount {
-        count
-      }
-    }
-  `);
+//   const countData = await client.request(`
+//     query shopifyProductCount {
+//       productsCount {
+//         count
+//       }
+//     }
+//   `);
 
-  res.status(200).send({ count: countData.data.productsCount.count });
-});
+//   res.status(200).send({ count: countData.data.productsCount.count });
+// });
 
 app.post("/api/products", async (_req, res) => {
   let status = 200;

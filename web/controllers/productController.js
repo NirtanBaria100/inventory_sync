@@ -41,7 +41,7 @@ class productController {
       if (searchQuery !== "" && FilterCriteria !== "")
         filterQuery = `title:${searchQuery}* AND vendor:${FilterCriteria}`;
 
-      if (Tags.length > 0) {
+      if (Tags?.length > 0) {
         // Ensure Tags is not empty
         filterQuery = "tag:"; // Initialize correctly
 
@@ -70,8 +70,9 @@ class productController {
         variables.query = filterQuery;
       }
 
-      console.log({variables})
-      // logger.debug("GraphQL query variables", { variables });
+
+     
+      logger.debug("GraphQL query variables", { variables });
 
       const headers = {
         "Content-Type": "application/json",

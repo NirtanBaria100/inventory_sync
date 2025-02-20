@@ -6,14 +6,16 @@ const initialState = {
   Query: {
     searchQuery: "",
     FilterCriteria: "",
-    productStatus:"",
-    Tags:[]
+    productStatus: "",
+    Tags: [],
   },
   vendors: [],
   startCursor: "",
   endCursor: "",
   hasNextPage: false,
   hasPreviousPage: false,
+  totalProductSynced: [],
+  totalOrdersSynced: [],
 };
 
 const productSlice = createSlice({
@@ -38,14 +40,19 @@ const productSlice = createSlice({
 
       return { ...state, value: updatedProducts };
     },
-    
+
     setLoading: (state, action) => {
       return { ...state, loading: action.payload };
     },
     setQuery: (state, action) => {
       return { ...state, Query: action.payload };
     },
-    
+    setTotalProductSynced: (state, action) => {
+      return { ...state, totalProductSynced: action.payload };
+    },
+    setTotalOrderSynced: (state, action) => {
+      return { ...state, totalOrdersSynced: action.payload };
+    },
     setVendors: (state, action) => {
       return { ...state, vendors: action.payload };
     },
@@ -75,6 +82,8 @@ export const {
   setEndCursor,
   setStartCursor,
   updateProductStatus,
+  setTotalProductSynced,
+  setTotalOrderSynced,
 } = productSlice.actions;
 
 export default productSlice.reducer;

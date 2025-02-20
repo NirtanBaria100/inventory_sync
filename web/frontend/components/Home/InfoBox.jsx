@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Badge, BlockStack, InlineStack, Text } from '@shopify/polaris';
 import copyIcon from '../../assets/copyIcon.png';
+import { STORETYPE } from '../../utils/storeType';
 
 function InfoBox({ label, value, showCopyButton }) {
   // we send the label we want to give, the value and if we want to show the copy icon or not 
@@ -64,7 +65,7 @@ function InfoBox({ label, value, showCopyButton }) {
           )}
         </InlineStack>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Badge >
+          <Badge tone={value == STORETYPE.destination?'magic': value == STORETYPE.source ?"info":""}>
             <Text variant="bodySm" as="p">
               {value}
             </Text>

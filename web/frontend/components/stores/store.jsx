@@ -4,6 +4,7 @@ import { Link, Page, Text, Divider, Button, Autocomplete, Icon, LegacyCard, Data
 import ConnectStore from '../stores/ConnectStore';
 import DisconnectStore from '../stores/DisconnectStore';
 import { useSelector } from "react-redux";
+import { STORETYPE } from '../../utils/storeType';
 
 function Stores() {
 
@@ -34,9 +35,9 @@ function Stores() {
 
         if (!storeData.intialLoading) {     // data has been fetched in app.jsx
             let url;
-            if (storeData.type === "source") {
+            if (storeData.type === STORETYPE.source) {
                 url = "/api/connection/connectedDestinationStores";   // we call this api if the current store is source
-            } else if (storeData.type === "destination") {
+            } else if (storeData.type === STORETYPE.destination) {
                 url = "/api/connection/connectedSourceStores";        // we call this api if the current store is destination
             }
 
@@ -53,10 +54,10 @@ function Stores() {
                     const data = await response.json();
 
 
-                    if (storeData.type === "source") {
+                    if (storeData.type === STORETYPE.source) {
                         setRows(data.destinationStore);
                         setconnectButtonEnabled(false);
-                    } else if (storeData.type === "destination") {
+                    } else if (storeData.type === STORETYPE.destination) {
                         setRows(data.sourceStore); // filtered the data in the backend so not extracting everything here
                     }
                 }
@@ -141,14 +142,13 @@ function Stores() {
                 >
                     <div>
                         <Text variant="headingMd" as="h4">
-                            Connected Stores
+                            {storeData.type == STORETYPE.destination ? "Connected Brands" : "Connected Marketplaces"}
                         </Text>
                     </div>
-                    {storeData.type === 'source' && (
+                    {storeData.type === STORETYPE.source && (
                         <Button
                             // disabled={showConnectStore || !connectButtonEnabled}
                             variant="primary"
-                            tone="success"
                             onClick={handleButtonClick}
                         >
                             Connect new store
@@ -187,41 +187,41 @@ function Stores() {
 
                     {showConnectStore && (
                         // showing the connect new store component 
-                        <div style={{
-                            display: "flex",
-                            alignItems: "center",
-                            flexDirection: "column",
-                            borderRadius: "10px",
-                            boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.2)",
-                            width: "40%",
-                            backgroundColor: "white",
-                            height: "130px",
-                            marginTop: "10px"
-                        }}>
-                            <ConnectStore onButtonClick={handleButtonClick} onConnectionSuccess={handleConnectionSuccess} />
-                        </div>
+                        // <div style={{
+                        //     display: "flex",
+                        //     alignItems: "center",
+                        //     flexDirection: "column",
+                        //     borderRadius: "10px",
+                        //     boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.2)",
+                        //     width: "40%",
+                        //     backgroundColor: "white",
+                        //     height: "130px",
+                        //     marginTop: "10px"
+                        // }}>
+                        <ConnectStore onButtonClick={handleButtonClick} onConnectionSuccess={handleConnectionSuccess} />
+                        // </div>
                     )}
 
                     {showDisconnectStore && (
                         // showing the disconnect store component
-                        <div style={{
-                            display: "flex",
-                            alignItems: "center",
-                            flexDirection: "column",
-                            borderRadius: "10px",
-                            boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.2)",
-                            width: "40%",
-                            backgroundColor: "white",
-                            height: "130px",
-                            marginTop: "10px"
-                        }}>
-                            <DisconnectStore
-                                onButtonClick={handleButtonClick1}
-                                onConnectionSuccess={handleConnectionSuccess}
-                                rowId={selectedRowId}
-                                storeName={storeName}
-                            />
-                        </div>
+                        // <div style={{
+                        //     display: "flex",
+                        //     alignItems: "center",
+                        //     flexDirection: "column",
+                        //     borderRadius: "10px",
+                        //     boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.2)",
+                        //     width: "40%",
+                        //     backgroundColor: "white",
+                        //     height: "130px",
+                        //     marginTop: "10px"
+                        // }}>
+                        <DisconnectStore
+                            onButtonClick={handleButtonClick1}
+                            onConnectionSuccess={handleConnectionSuccess}
+                            rowId={selectedRowId}
+                            storeName={storeName}
+                        />
+                        // </div>
                     )}
                 </div>
             </Card>

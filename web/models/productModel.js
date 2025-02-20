@@ -2,6 +2,7 @@ import axios from "axios";
 import logger from "../config/logger.js";
 import {
   addTagsMutation,
+  ProductDeleteMutation,
   productsetMutation,
   publishUpdateMutation,
 } from "../graphql/mutations.js";
@@ -249,7 +250,6 @@ class ProductModel {
         }
       }
 
-
       // Return the created product details
       return productData.product;
     } catch (error) {
@@ -403,17 +403,7 @@ class ProductModel {
   static async deleteProductsBulk(products, marketPlace, shop) {
     const shopifyEndpoint = `https://${marketPlace.marketPlace}/admin/api/${process.env.SHOPIFY_API_VERSION}/graphql.json`;
 
-    const mutation = `
-      mutation productDelete($id: ID!) {
-        productDelete(input: { id: $id }) {
-          deletedProductId
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `;
+    const mutation = ProductDeleteMutation;
 
     for (const product of products) {
       try {

@@ -8,7 +8,7 @@ import {
   updateProductStatus,
 } from "../../../features/productSlice";
 
-export async function getbatchProducts(page, Query) {
+export async function getbatchProducts(page, Query,marketplaces) {
   const URL = `/api/products/batch`;
   console.log({Query})
   const payload = {
@@ -20,7 +20,7 @@ export async function getbatchProducts(page, Query) {
         ? false
         : "",
     searchQuery: Query?.searchQuery,
-    Tags: ['siar-testing-store.myshopify.com'],
+    Tags: marketplaces || [],
     page: page,
     endCursor: Query?.endCursor,
     startCursor: Query?.startCursor,

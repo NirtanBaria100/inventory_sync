@@ -1,5 +1,5 @@
 export const STORETYPE = {
-    destination: "destination",
-    source: "source",
+    destination: "Destination",
+    source: "Source",
   };
   

@@ -5,6 +5,7 @@ import {
 } from '@shopify/polaris';
 import { useDispatch, useSelector } from "react-redux";
 import { setStartStoreData } from "../../features/dataSlice";
+import { STORETYPE } from '../../utils/storeType';
 
 
 
@@ -85,14 +86,14 @@ function FirstTimeUser({ setNewUser }) {
                 </div>
 
                 <button
-                    onClick={() => handleSelection('source')}
+                    onClick={() => handleSelection('Source')}
                     style={{
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
                         flexDirection: "column",
                         borderRadius: "10px",
-                        boxShadow: selectedOption === 'source'
+                        boxShadow: selectedOption === 'Source'
                             ? "0px 0px 10px rgba(0, 0, 0, 0.5)"
                             : "0px 0px 5px rgba(0, 0, 0, 0.1)",
                         width: "40%",
@@ -100,7 +101,7 @@ function FirstTimeUser({ setNewUser }) {
                         position: "absolute",
                         left: "5%",
                         top: "15%",
-                        backgroundColor: selectedOption === 'source' ? '#F5F5F5' : 'white',
+                        backgroundColor: selectedOption === 'Source' ? '#F5F5F5' : 'white',
                     }}
                 >
 
@@ -130,14 +131,14 @@ function FirstTimeUser({ setNewUser }) {
                 </button>
 
                 <button
-                    onClick={() => handleSelection('destination')}
+                    onClick={() => handleSelection(STORETYPE.destination)}
                     style={{
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
                         flexDirection: "column",
                         borderRadius: "10px",
-                        boxShadow: selectedOption === 'destination'
+                        boxShadow: selectedOption === STORETYPE.destination
                             ? "0px 0px 10px rgba(0, 0, 0, 0.5)"
                             : "0px 0px 5px rgba(0, 0, 0, 0.1)",
                         width: "40%",
@@ -145,7 +146,7 @@ function FirstTimeUser({ setNewUser }) {
                         position: "absolute",
                         right: "5%",
                         top: "15%",
-                        backgroundColor: selectedOption === 'destination' ? '#F5F5F5' : 'white',
+                        backgroundColor: selectedOption === STORETYPE.destination ? '#F5F5F5' : 'white',
 
                     }}
                 >

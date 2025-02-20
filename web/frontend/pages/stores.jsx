@@ -1,9 +1,9 @@
-import { SearchIcon } from '@shopify/polaris-icons';
-import { React, useState, useCallback, useMemo, useEffect } from 'react';
-import { Link, Page, Text, Divider, Button, Autocomplete, Icon, LegacyCard, DataTable, TextField, Frame, IndexTable, Badge, useBreakpoints, Spinner, } from "@shopify/polaris";
+import { React, useState, useEffect } from 'react';
+import {  Page, Text, Divider, Button, LegacyCard, Frame, IndexTable,  useBreakpoints, Spinner, Card, } from "@shopify/polaris";
 import ConnectStore from '../components/stores/ConnectStore';
 import DisconnectStore from '../components/stores/DisconnectStore';
 import { useSelector } from "react-redux";
+import { STORETYPE } from '../utils/storeType';
 
 function stores() {
 
@@ -34,9 +34,9 @@ function stores() {
 
         if (!storeData.intialLoading) {     // data has been fetched in app.jsx
             let url;
-            if (storeData.type === "source") {
+            if (storeData.type === STORETYPE.source) {
                 url = "/api/connection/connectedDestinationStores";   // we call this api if the current store is source
-            } else if (storeData.type === "destination") {
+            } else if (storeData.type === STORETYPE.destination) {
                 url = "/api/connection/connectedSourceStores";        // we call this api if the current store is destination
             }
 
@@ -51,12 +51,10 @@ function stores() {
 
                 if (response.status === 200) {
                     const data = await response.json();
-                   
-
-                    if (storeData.type === "source") {
+                    if (storeData.type === STORETYPE.source) {
                         setRows(data.destinationStore);
                         setconnectButtonEnabled(false);
-                    } else if (storeData.type === "destination") {
+                    } else if (storeData.type === STORETYPE.destination) {
                         setRows(data.sourceStore); // filtered the data in the backend so not extracting everything here
                     }
                 }
@@ -152,7 +150,7 @@ function stores() {
                     <div style={{ width: '100%' }}>
                         {!showConnectStore && !showDisconnectStore && (
                             // showing the table in this condition  
-                            <LegacyCard>
+                            <Card>
                                 {rows.length > 0 ? (
                                     <IndexTable
                                         condensed={breakpoints.smDown}
@@ -171,7 +169,7 @@ function stores() {
                                         No stores connected
                                     </div>
                                 )}
-                            </LegacyCard>
+                            </Card>
                         )}
                     </div>
 

@@ -207,7 +207,6 @@ class productImportModel {
       ProductName: product.title,
       ShopName: shop,
       ImportDate: new Date(), // Add current timestamp
-      MetaData: product.MetaData || {}, // Use empty object as default
     }));
 
     try {
@@ -382,25 +381,27 @@ class productImportModel {
           continue;
         }
         for (const ProductReference of log.ProductReferences) {
-          if (ProductReference.marketplace) {
+          if (ProductReference.Marketplace) {
             const Session = await GetSessionByShopName(
-              ProductReference.marketplace
+              ProductReference.Marketplace
             );
             if (Session) {
               ProductMetadata.push({
-                marketPlace: ProductReference.marketplace,
-                refId: ProductReference.id,
+                marketPlace: ProductReference.Marketplace,
+                refId: ProductReference.product_id,
                 accessToken: Session.accessToken,
                 Id: log.ProductId,
               });
             }
           } else {
             logger.error(
-              `Invalid marketplace: ${ProductReference.marketplace} in ProductReference`
+              `Invalid marketplace: ${ProductReference.Marketplace} in ProductReference`
             );
           }
         }
       }
+
+
 
       const uniqueMarketplaces = [
         ...new Map(
@@ -424,6 +425,7 @@ class productImportModel {
         0
       );
 
+      
       for (const marketPlace of marketPlaces) {
         //fetch products for this marketplace
         let FilteredProductsByMarketPlace = ProductMetadata.filter(
