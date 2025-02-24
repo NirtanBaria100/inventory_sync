@@ -107,13 +107,15 @@ function FirstTimeUser({ setNewUser }) {
 
 
                     <img
-                        src="./assets/shop.png"  // image saved in assets folder 
+                        src="https://img.icons8.com/?size=100&id=FQjuMXbb1Hlh&format=png&color=000000"  // image saved in assets folder 
                         style={{
                             width: "100%",
                             height: "80%",
                             objectFit: "contain",
                         }}
                     />
+
+                    
 
 
 
@@ -151,7 +153,7 @@ function FirstTimeUser({ setNewUser }) {
                     }}
                 >
                     <img
-                        src="./assets/brand-positioning.png"   //image saved in assets folder 
+                        src="/brand-positioning.png"   //image saved in assets folder 
                         style={{
                             width: "100%",
                             height: "80%",
