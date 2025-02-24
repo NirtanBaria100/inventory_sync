@@ -1,3 +1,4 @@
+import prisma from "../config/db.server.js";
 import logger from "../config/logger.js";
 import { STORETYPE } from "../frontend/utils/storeType.js";
 import {
@@ -30,7 +31,7 @@ export const createConnection = async (req, res) => {
   try {
     // Check if the shop making the request is a "source" store
     const sourceShop = await checkSourceShop(shop);
-    console.log({sourceShop});
+    console.log({ sourceShop });
     if (!sourceShop || sourceShop.type !== STORETYPE.source) {
       logger.warn(`Shop ${shop} is not a source store or not found.`);
       return res.status(400).send({ error: "Not a source store." });
@@ -112,6 +113,8 @@ export const connectedDestinationStores = async (req, res) => {
       id: item.destinationStore.id,
       storeName: item.destinationStore.storeName,
       status: "Connected",
+      syncMode: item.syncMode,
+      loading:false
     }));
 
     logger.info(`Connected destination stores retrieved for id: ${id}`);
@@ -153,6 +156,8 @@ export const connectedSourceStores = async (req, res) => {
       id: item.sourceStore.id,
       storeName: item.sourceStore.storeName,
       status: "Connected",
+      syncMode: item.syncMode,
+      loading:false
     }));
 
     logger.info(`Connected source stores retrieved for id: ${id}`);
@@ -265,5 +270,78 @@ export const removeConnection = async (req, res) => {
   } catch (error) {
     logger.error(`Error in removeConnection: ${error.message}`);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// it updates the sync mode status for a provided store id whether it is source store or destination store.
+export const updateSyncModeStatusAll = async (req, res) => {
+  try {
+    let id = req.params.id;
+    let type = req.params.type;
+    let status = req.params.status;
+
+    if (type == STORETYPE.source) {
+      await prisma.connection.updateMany({
+        where: { sourceStoreId: parseInt(id) },
+        data: {
+          syncMode: status == "true" ? true : false,
+        },
+      });
+    } else {
+      await prisma.connection.updateMany({
+        where: { destinationStoreId: parseInt(id) },
+        data: {
+          syncMode: status == "true" ? true : false,
+        },
+      });
+    }
+    return res.status(200).json({
+      message: `Sync mode status ${status == "true" ? "Enabled" : "Disabled"}`,
+    });
+  } catch (error) {
+    console.log({ error });
+    return res.status(500).json({ message: error });
+  }
+};
+export const updateSyncModeStatusIndividual = async (req, res) => {
+  try {
+    let type = req.params.type;
+    let storeId = req.params.storeId;
+    let selectStoreId = req.params.selectStoreId;
+    let status = req.params.status;
+
+    if (type == STORETYPE.source) {
+      let ExistingConnection = await prisma.connection.findFirst({
+        where: {
+          sourceStoreId: parseInt(storeId),
+          destinationStoreId: parseInt(selectStoreId),
+        },
+      });
+      await prisma.connection.update({
+        where: { id: ExistingConnection.id },
+        data: {
+          syncMode: status == "true" ? true : false,
+        },
+      });
+    } else {
+      let ExistingConnection = await prisma.connection.findFirst({
+        where: {
+          sourceStoreId: parseInt(selectStoreId),
+          destinationStoreId: parseInt(storeId),
+        },
+      });
+      await prisma.connection.update({
+        where: { id: ExistingConnection.id },
+        data: {
+          syncMode: status == "true" ? true : false,
+        },
+      });
+    }
+    return res.status(200).json({
+      message: `Sync mode status ${status == "true" ? "Enabled" : "Disabled"}`,
+    });
+  } catch (error) {
+    console.log({ error });
+    return res.status(500).json({ message: error });
   }
 };

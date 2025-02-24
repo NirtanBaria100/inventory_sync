@@ -127,6 +127,7 @@ export default {
         logger.error(`Session does not found for shop: ${shop}`);
       }
 
+      
       //To fetch the further details for the product we call graphql api
       const productDetails = await ImportedProductsLogsModel.findLog(
         product.admin_graphql_api_id,
@@ -140,7 +141,7 @@ export default {
       for (const productRef of productDetails.ProductReferences) {
         //Fetch the marketplace session from db
         let MarketPlaceStoreSession = await GetSessionByShopName(
-          productRef.marketplace
+          productRef.Marketplace
         );
 
         if (!MarketPlaceStoreSession) {
@@ -162,7 +163,7 @@ export default {
         );
 
         return logger.info(
-          `${IsProductUpdated.id} has been successfully updated on marketplace :${productRef.marketplace}}`
+          `${IsProductUpdated.id} has been successfully updated on marketplace :${productRef.Marketplace}}`
         );
       }
 

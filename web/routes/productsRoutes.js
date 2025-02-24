@@ -24,9 +24,12 @@ router.get("/count/:brand/:marketplace", async (req, res) => {
     const brand = req.params.brand;
     const marketplace = req.params.marketplace;
 
+    console.log({brand,marketplace})
     // Fetch products from database by brand name
     const products =
       await ImportedProductsLogsModel.RetrieveProductsByBrandName(brand,marketplace);
+
+      
 
     console.log("Brand Products Count:", { products });
 

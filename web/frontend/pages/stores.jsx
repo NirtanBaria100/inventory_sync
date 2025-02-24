@@ -1,5 +1,5 @@
 import { React, useState, useEffect } from 'react';
-import {  Page, Text, Divider, Button, LegacyCard, Frame, IndexTable,  useBreakpoints, Spinner, Card, } from "@shopify/polaris";
+import { Page, Text, Divider, Button, LegacyCard, Frame, IndexTable, useBreakpoints, Spinner, Card, } from "@shopify/polaris";
 import ConnectStore from '../components/stores/ConnectStore';
 import DisconnectStore from '../components/stores/DisconnectStore';
 import { useSelector } from "react-redux";
@@ -109,12 +109,11 @@ function stores() {
         getStoreDetails();
     }, [storeData]);
 
-    if (loading) {    //inital laoder
+    if (loading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                {/* <h2>Loading...</h2> */}
-                <Spinner accessibilityLabel="Spinner example" size="large" />
-            </div>
+            <>
+                <Skeleton />
+            </>
         );
     }
 

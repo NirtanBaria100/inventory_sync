@@ -122,7 +122,6 @@ const Products = () => {
   const [selectAllVariants, setSelectAllVariants] = useState(false);
   const [selectAllProducts, setSelectAllProducts] = useState(false);
 
-
   const handleCheckboxChange = (key) => {
     setColumnSelection((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -215,90 +214,21 @@ const Products = () => {
     }
   }, []);
 
-  // Fetch vendor list and initial product data
-  useEffect(() => {
-    const fetchData = async () => {
-      dispatch(setLoading(true));
-      const vendorRes = await fetch("/api/products/vendors");
-      const vendorData = await vendorRes.json();
-      dispatch(setVendors(vendorData.vendors));
-
-      const page = 1;
-      let shopNames = await getStoreDetails();
-      setMarketplaces(shopNames);
-
-
-      const response = await getbatchProducts(0, Query, marketplace != "" ? [marketplace] : []);
-      const { Pageinfo, data } = response;
-
-      dispatch(setHasNextPage(Pageinfo.hasNextPage));
-      dispatch(setHasPreviousPage(Pageinfo.hasPreviousPage));
-      dispatch(setStartCursor(Pageinfo.startCursor));
-      dispatch(setEndCursor(Pageinfo.endCursor));
-      dispatch(setProducts(data));
-      dispatch(setLoading(false));
-    };
-
-    if (storeData.type === STORETYPE.source) {
-      fetchData();
-    }
-
-  }, []);
-
-  // Polling for sync updates
-  useEffect(() => {
-
-
-
-
-    if (!isSyncing) return;
-
-
-    setSyncInfo({
-      Total: 0,
-      Remaining: 0,
-      Percentage: 0,
-      State: '',
-      mode: '',
-      TotalMarketPlaces: 0, RemainingMarketPlaces: 0
-    });
-
-
-
-
-    // Start the interval
-    intervalRef.current = setInterval(updateProgressBar, IntervalTimeDuration);
-
-    // Cleanup function to clear the interval
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-
-        intervalRef.current = null;
-      }
-    };
-
-
-  }, [isSyncing, updateProgressBar, IntervalTimeDuration]);
-
   // Search handler
   const handleSearchQuery = async () => {
     dispatch(setLoading(true));
-    let shopNames = await getStoreDetails();
+    let shopNames = storeData.type == STORETYPE.destination ? await getStoreDetails() : [];
     setMarketplaces(shopNames);
-
-    console.log(marketplace)
-
     const response = await getbatchProducts(0, Query, marketplace != "" ? [marketplace] : []);
     dispatch(setProducts(response.data));
     dispatch(setLoading(false));
   };
 
-
   async function getStoreDetails() {
 
 
     if (!storeData.intialLoading) { // Ensure data is fetched in app.jsx
+      console.log("storeData initialize!")
       let url;
       if (storeData.type === STORETYPE.source) {
         url = "/api/connection/connectedDestinationStores"; // Source store fetching destination stores
@@ -339,7 +269,77 @@ const Products = () => {
     }
   }
 
+  // Fetch vendor list and initial product data
+  useEffect(() => {
+    console.log({ storeData })
+    console.log("Fetching vendors,marketplaces and products ")
+    const fetchData = async () => {
+      dispatch(setLoading(true));
 
+
+      if (storeData.type === STORETYPE.source) {
+        const vendorRes = await fetch("/api/products/vendors");
+        const vendorData = await vendorRes.json();
+        dispatch(setVendors(vendorData.vendors));
+      }
+
+      const page = 1;
+
+
+      let shopNames = storeData.type == STORETYPE.destination ? await getStoreDetails() : [];
+      setMarketplaces(shopNames);
+
+      const response = await getbatchProducts(0, Query, marketplace != "" ? [marketplace] : shopNames);
+      const { Pageinfo, data } = response;
+
+      dispatch(setHasNextPage(Pageinfo.hasNextPage));
+      dispatch(setHasPreviousPage(Pageinfo.hasPreviousPage));
+      dispatch(setStartCursor(Pageinfo.startCursor));
+      dispatch(setEndCursor(Pageinfo.endCursor));
+      dispatch(setProducts(data));
+      dispatch(setLoading(false));
+    };
+
+
+    fetchData()
+
+  }, [storeData]);
+
+  // Polling for sync updates
+  useEffect(() => {
+
+
+
+
+    if (!isSyncing) return;
+
+
+    setSyncInfo({
+      Total: 0,
+      Remaining: 0,
+      Percentage: 0,
+      State: '',
+      mode: '',
+      TotalMarketPlaces: 0, RemainingMarketPlaces: 0
+    });
+
+
+
+
+    // Start the interval
+    intervalRef.current = setInterval(updateProgressBar, IntervalTimeDuration);
+
+    // Cleanup function to clear the interval
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+
+        intervalRef.current = null;
+      }
+    };
+
+
+  }, [isSyncing, updateProgressBar, IntervalTimeDuration]);
 
   // This useEffect is implemented for update sync info on first load
   useEffect(() => {
@@ -391,17 +391,10 @@ const Products = () => {
     fetchColumns();
   }, []);
 
-
   // Trigger search when productStatus changes or markplace
   useEffect(() => {
     handleSearchQuery();
-  }, [Query.productStatus]); // Runs every time productStatus changes
-
-
-  // useEffect(() => {
-  //   handleSearchQuery();
-  // }, [marketplace]); // Runs every time productStatus changes
-
+  }, [Query.productStatus, marketplace]); // Runs every time productStatus changes
 
   const handleMarketplaceChange = useCallback((value) => setMarketplace(prev => value));
 
@@ -633,7 +626,7 @@ const Products = () => {
 
             <Text variant='bodyLg'>Filter:</Text>
             <Select
-              options={marketPlaces.map(marketplace => ({ label: marketplace.replace('.myshopify.com', ""), value: marketplace }))}
+              options={marketPlaces?.map(marketplace => ({ label: marketplace.replace('.myshopify.com', ""), value: marketplace }))}
               placeholder={"Select Marketplace"}
               onChange={handleMarketplaceChange}
               value={marketplace}

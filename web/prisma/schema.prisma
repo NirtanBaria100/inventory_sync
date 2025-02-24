@@ -55,6 +55,7 @@ model Connection {
   id                 Int   @id @default(autoincrement())
   sourceStoreId      Int
   destinationStoreId Int
+  syncMode           Boolean   @default(false)  
   sourceStore        Store @relation("SourceStoreRelation", fields: [sourceStoreId], references: [id])
   destinationStore   Store @relation("DestinationStoreRelation", fields: [destinationStoreId], references: [id])
 }
@@ -75,7 +76,7 @@ model ImportedProductReferences {
   Refid                   Int                 @id @default(autoincrement())
   Marketplace             String
   product_id              String
-  ImportedProductLog      ImportedProductLog? @relation(fields: [importedProductLogLogID], references: [LogID],onDelete: Cascade)
+  ImportedProductLog      ImportedProductLog? @relation(fields: [importedProductLogLogID], references: [LogID], onDelete: Cascade)
   importedProductLogLogID Int?
 }
 

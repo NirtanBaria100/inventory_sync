@@ -9,6 +9,7 @@ import { Badge, Banner, BlockStack, Button, Card, Collapsible, InlineStack, Layo
 import Stores from '../components/stores/store';
 import { STORETYPE } from '../utils/storeType';
 import { setTotalProductSynced } from '../features/productSlice';
+import Skeleton from '../components/skeleton';
 
 
 function Home() {
@@ -16,6 +17,9 @@ function Home() {
     const [loading, setLoading] = useState(true);           //intial loader state
     const [connectedStores, SetConnectedStores] = useState([]);
 
+    const [rows, setRows] = useState([]);
+    const [SyncAllState, setSyncAllState] = useState(false);
+    const [connectButtonEnabled, setconnectButtonEnabled] = useState(true);
 
     const dispatch = useDispatch();
     const { totalProductSynced, totalOrdersSynced } = useSelector((state) => state.products);
@@ -55,7 +59,25 @@ function Home() {
 
         firstTimerUserCheck();
 
+
+
     }, [storeData]);
+
+    useEffect(() => {
+        UpdateSyncAllSwitchStatus();
+    }, [rows]);
+
+
+    function UpdateSyncAllSwitchStatus() {
+        console.log("working")
+        console.log({rows})
+        if (rows.some(item => item.syncMode == true)) {
+            setSyncAllState(true);
+        }
+        else if ((rows.some(item => item.syncMode != true))) {
+            setSyncAllState(false);
+        }
+    }
 
 
     async function getProductCount(brand, marketplace) {
@@ -80,6 +102,8 @@ function Home() {
         }
     }
 
+
+
     async function getStoreDetails() {
         setLoading(true);
 
@@ -101,41 +125,52 @@ function Home() {
                 if (response.status === 200) {
                     const data = await response.json();
                     let storeNames = [];
-
+                    let NamesWithProductCount = []
                     if (storeData.type === STORETYPE.source) {
+                        setRows(data.destinationStore);
+                        setconnectButtonEnabled(false);
                         storeNames = data?.destinationStore.map(store => store.storeName);
+                        NamesWithProductCount = await Promise.all(
+                            storeNames.map(async (shopName) => ({
+                                shopName,
+                                count: await getProductCount(storeData.storeName, shopName),
+                            }))
+                        );
+
                     } else if (storeData.type === STORETYPE.destination) {
+                        setRows(data.sourceStore);
                         storeNames = data?.sourceStore.map(store => store.storeName);
+                        NamesWithProductCount = await Promise.all(
+                            storeNames.map(async (shopName) => ({
+                                shopName,
+                                count: await getProductCount(shopName, storeData.storeName),
+                            }))
+                        );
                     }
 
                     // Wait for all getProductCount calls to resolve
-                    const NamesWithProductCount = await Promise.all(
-                        storeNames.map(async (shopName) => ({
-                            shopName,
-                            count: await getProductCount(shopName, storeData.storeName),
-                        }))
-                    );
 
                     dispatch(setTotalProductSynced(NamesWithProductCount));
                 }
                 else if (response.status === 404) {
-                    SetConnectedStores([]); // Set empty if no stores found
+                    setRows([])
+                    setconnectButtonEnabled(true);
                 }
 
                 setLoading(false);
             } catch (error) {
                 console.error('Error during API call:', error);
                 setLoading(false);
+
             }
         }
     }
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                {/* <h2>Loading...</h2> */}
-                <Spinner accessibilityLabel="Spinner example" size="large" />
-            </div>
+            <>
+                <Skeleton />
+            </>
         );
     }
 
@@ -145,7 +180,7 @@ function Home() {
             {newUser ? <FirstTimeUser setNewUser={setNewUser} /> : ( //new user then we load this component or else load homedashboard component
                 <>
 
-                    <HomeDashbaord />
+                    <HomeDashbaord setSyncAllState={setSyncAllState} SyncAllState={SyncAllState} rows={rows} setRows={setRows} />
                     <Layout  >
                         <Layout.Section variant='oneThird' >
 
@@ -232,7 +267,7 @@ function Home() {
                         </Layout.Section>
                         <Layout.Section variant='oneHalf'>
 
-                            <Stores />
+                            <Stores rows={rows} setRows={setRows} setconnectButtonEnabled={setconnectButtonEnabled} connectButtonEnabled={connectButtonEnabled} setSyncAllState={setSyncAllState} SyncAllState={SyncAllState} />
                         </Layout.Section>
                     </Layout>
                 </>

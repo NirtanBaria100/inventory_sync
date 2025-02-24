@@ -12,7 +12,7 @@ import { getSyncInfo, syncInfoCreate } from "../models/syncInfoModel.js";
 import { jobStates } from "../utils/jobStates.js";
 import { jobMode } from "../frontend/utils/jobMode.js";
 import { getColumns, saveColmns } from "../models/ColumnSelection.js";
-import shopify from "../shopify.js";
+
 class productController {
   static async getProductBatch(req, res) {
     try {

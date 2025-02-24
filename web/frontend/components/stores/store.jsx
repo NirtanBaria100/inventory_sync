@@ -1,12 +1,13 @@
-import { SearchIcon } from '@shopify/polaris-icons';
+import { DeleteIcon, SearchIcon } from '@shopify/polaris-icons';
 import { React, useState, useCallback, useMemo, useEffect } from 'react';
 import { Link, Page, Text, Divider, Button, Autocomplete, Icon, LegacyCard, DataTable, TextField, Frame, IndexTable, Badge, useBreakpoints, Spinner, InlineStack, Card, } from "@shopify/polaris";
 import ConnectStore from '../stores/ConnectStore';
 import DisconnectStore from '../stores/DisconnectStore';
 import { useSelector } from "react-redux";
 import { STORETYPE } from '../../utils/storeType';
+import Skeleton from '../skeleton';
 
-function Stores() {
+function Stores({ rows, setRows, connectButtonEnabled, setconnectButtonEnabled, setSyncAllState, SyncAllState }) {
 
     const resourceName = {
         singular: 'store',
@@ -15,9 +16,9 @@ function Stores() {
 
     const [showConnectStore, setShowConnectStore] = useState(false);               // the state of the component which shows connect new store 
     const [showDisconnectStore, setShowDisconnectStore] = useState(false);         // the state of the component which shows dissconnect new store 
-    const [rows, setRows] = useState([]);                                          // this the data of the table 
+    // const [rows, setRows] = useState([]);                                          // this the data of the table 
     const [loading, setLoading] = useState(true);                                  //intial loader state
-    const [connectButtonEnabled, setconnectButtonEnabled] = useState(true);        // state to show if connect button should be enabled or not 
+    // const [connectButtonEnabled, setconnectButtonEnabled] = useState(true);        // state to show if connect button should be enabled or not 
     const [rowMarkup1, setRowMarkup1] = useState([]);                              //this the updated data of the table which is filtered according to the index table 
     const [selectedRowId, setSelectedRowId] = useState('');                        // when row is clicked the row id is saved here
     const [storeName, setStoreName] = useState('');                                // when row is clicked the store name is saved here
@@ -72,18 +73,90 @@ function Stores() {
         }
     }
 
+    const handleChangeSyncModeIndividual = async (store_id, status) => {
+        try {
+            setSwitchButtonLoading(store_id, true);
+
+            // Toggle sync mode
+            const newStatus = !status;
+
+            // Update the backend
+            await UpdateStoreSyncStatus(storeData.type, storeData.id, store_id, newStatus);
+
+            // Update local state with functional setState
+            setRows(prevRows => {
+                const updatedRows = prevRows.map(store =>
+                    store.id === store_id ? { ...store, syncMode: newStatus } : store
+                );
+
+                // ✅ Check updated state immediately after updating it
+                if (updatedRows.some(item => item.syncMode)) {
+                    console.log({ updatedRows })
+                    console.log("enable sync all status");
+                    setSyncAllState(true);
+                }
+
+                else if (updatedRows.some(item => item.syncMode != true)) {
+                    console.log({ updatedRows })
+                    console.log("disable sync all status");
+                    setSyncAllState(false);
+                }
+
+                return updatedRows; // Ensure the new state is returned
+            });
+
+            setSwitchButtonLoading(store_id, false);
+        } catch (error) {
+            console.error("Error updating sync mode:", error);
+        }
+    };
+
+
+    const setSwitchButtonLoading = (store_id, state) => {
+        // Update local state
+        setRows(prevRows =>
+            prevRows.map(store =>
+                store.id === store_id ? { ...store, loading: state } : store
+            )
+        );
+    }
+
+
+    async function UpdateStoreSyncStatus(type, storeId, selectStoreId, status) {
+        try {
+
+            const URL = `/api/connection/update/${type}/${storeId}/${selectStoreId}/${status}`;
+
+            const response = await fetch(URL);
+            let result = await response.json();
+
+
+            if (!response.ok) {
+                throw new Error(`Failed to update sync status: ${response.statusText}`);
+            }
+
+            if (response.ok) {
+                return shopify.toast.show(result.message);
+            }
+            else {
+                return shopify.toast.show(result.message, { isError: true });
+            }
+
+        } catch (error) {
+            console.error("Error updating store sync status:", error);
+            return null;
+        }
+    }
+
+
     useEffect(() => {
         if (rows.length > 0) {
-            const newRowMarkup = rows.map(({ id, storeName, status }, index) => (     // mapping function , was given on polaris 
+            const newRowMarkup = rows.map(({ id, storeName, status, syncMode, loading }, index) => (     // mapping function , was given on polaris 
                 <IndexTable.Row
                     id={id}
-                    key={id}
+                    key={index}
                     position={index}
-                    onClick={() => {
-                        setSelectedRowId(id);
-                        setStoreName(storeName);
-                        handleButtonClick1();
-                    }}
+
                 >
                     <IndexTable.Cell>
                         <Text variant="bodyMd" as="span">
@@ -95,14 +168,41 @@ function Stores() {
                     </Badge></IndexTable.Cell>
                     <IndexTable.Cell>
                         <InlineStack>
-                            <input type="checkbox" checked={true} hidden="hidden" id="username" />
-                            <label class="switch" for="username"></label>
+                            <input
+                                type="checkbox"
+                                checked={syncMode}
+                                onChange={() => handleChangeSyncModeIndividual(id, syncMode)}
+                                id={`sync-mode-${id}`}
+                                style={{ display: "none" }}
+                            />
+
+                            {loading ?
+                                <>
+                                    <Spinner size='small' key={index} />
+                                </> : <>
+                                    <label className="switch" htmlFor={`sync-mode-${id}`}></label>
+                                </>
+                            }
+
                         </InlineStack>
+                    </IndexTable.Cell>
+                    <IndexTable.Cell>
+                        <Button onClick={() => {
+                            setSelectedRowId(id);
+                            setStoreName(storeName);
+                            handleButtonClick1();
+
+                        }}
+                            icon={DeleteIcon}
+                        ></Button>
                     </IndexTable.Cell>
                 </IndexTable.Row>
             ));
             setRowMarkup1(newRowMarkup);
         }
+
+
+
     }, [rows]);
 
     const storeData = useSelector((state) => state.data);
@@ -120,12 +220,12 @@ function Stores() {
         getStoreDetails();
     }, [storeData]);
 
-    if (loading) {    //inital laoder
+
+    if (loading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                {/* <h2>Loading...</h2> */}
-                <Spinner accessibilityLabel="Spinner example" size="large" />
-            </div>
+            <>
+                <Skeleton />
+            </>
         );
     }
 
@@ -170,7 +270,8 @@ function Stores() {
                                         headings={[
                                             { title: 'Store Name' },
                                             { title: 'Status' },
-                                            { title: 'Action' },
+                                            { title: 'Mode' },
+                                            { title: 'Delete' },
                                         ]}
                                         selectable={false}
                                     >
