@@ -153,7 +153,7 @@ function FirstTimeUser({ setNewUser }) {
                     }}
                 >
                     <img
-                        src="/brand-positioning.png"   //image saved in assets folder 
+                        src="./brand-positioning.png"   //image saved in assets folder 
                         style={{
                             width: "100%",
                             height: "80%",
