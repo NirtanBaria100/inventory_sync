@@ -107,7 +107,7 @@ function FirstTimeUser({ setNewUser }) {
 
 
                     <img
-                        src="https://img.icons8.com/?size=100&id=FQjuMXbb1Hlh&format=png&color=000000"  // image saved in assets folder 
+                        src="./shop.png"  // image saved in assets folder 
                         style={{
                             width: "100%",
                             height: "80%",
