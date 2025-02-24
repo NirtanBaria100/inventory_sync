@@ -177,11 +177,10 @@ function Home() {
 
     return (
         <Page title='Sync Bridge'>
-            <FirstTimeUser setNewUser={setNewUser} />
             {newUser ? <FirstTimeUser setNewUser={setNewUser} /> : ( //new user then we load this component or else load homedashboard component
                 <>
 
-                    {/* <HomeDashbaord setSyncAllState={setSyncAllState} SyncAllState={SyncAllState} rows={rows} setRows={setRows} />
+                    <HomeDashbaord setSyncAllState={setSyncAllState} SyncAllState={SyncAllState} rows={rows} setRows={setRows} />
                     <Layout  >
                         <Layout.Section variant='oneThird' >
 
@@ -270,7 +269,7 @@ function Home() {
 
                             <Stores rows={rows} setRows={setRows} setconnectButtonEnabled={setconnectButtonEnabled} connectButtonEnabled={connectButtonEnabled} setSyncAllState={setSyncAllState} SyncAllState={SyncAllState} />
                         </Layout.Section>
-                    </Layout> */}
+                    </Layout>
                 </>
             )}
         </Page>
